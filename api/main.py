@@ -20,6 +20,7 @@ from config.settings import (
     build_storage,
     build_transcription,
 )
+from core.version import VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ async def lifespan(application: FastAPI):
 app = FastAPI(
     title="REMI",
     description="Relationship Memory Intelligence",
-    version="0.1.0",
+    version=VERSION,
     lifespan=lifespan,
 )
 

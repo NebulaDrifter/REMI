@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from adapters.storage.base import StorageProvider
 from api.dependencies import get_storage
 from core.models import Person
+from core.version import VERSION
 
 TEMPLATES_DIR = Path(__file__).parent.parent.parent / "frontend" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -199,7 +200,7 @@ async def settings_page(request: Request):
         "settings.html",
         {
             "active": "settings",
-            "version": "0.1.0",
+            "version": VERSION,
             "deployment": settings.remi_deployment,
             "storage_backend": settings.storage_backend.value,
             "ai_provider": settings.ai_provider.value,
