@@ -19,6 +19,7 @@ from core.models import (
     OpenLoop,
     PersonResolution,
     PersonResolutionStatus,
+    Reminder,
 )
 from core.prompts.extraction import EXTRACTION_SYSTEM_PROMPT, build_extraction_prompt
 
@@ -179,9 +180,31 @@ async def confirm_save(
             )
         )
 
+    reminder_ids = []
+    for extracted_reminder in body.extraction.reminders:
+        reminder = Reminder(
+            person_id=body.person_id,
+            title=extracted_reminder.title,
+            date=extracted_reminder.date,
+            recurrence=extracted_reminder.recurrence,
+            source_interaction_id=interaction.interaction_id,
+        )
+        await storage.create_reminder(reminder)
+        reminder_ids.append(reminder.reminder_id)
+
+        await storage.write_audit_entry(
+            AuditLogEntry(
+                actor="single_user_mode",
+                action="create_reminder",
+                resource_id=reminder.reminder_id,
+                source="api",
+            )
+        )
+
     return {
         "interaction_id": interaction.interaction_id,
         "loop_ids": loop_ids,
+        "reminder_ids": reminder_ids,
     }
 
 

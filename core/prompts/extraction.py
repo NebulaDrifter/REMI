@@ -38,6 +38,23 @@ health, opinion, other
   - description (string): What was promised or needs follow-up.
   - due_date (string or null): ISO8601 date if a deadline was mentioned, \
 null otherwise.
+- reminders (array): Date-bearing facts that should trigger future reminders. \
+Each item has:
+  - title (string): Short description (e.g., "Jerry's birthday")
+  - date (string): "MM-DD" for annual events (birthdays, anniversaries), \
+"YYYY-MM-DD" for one-time events
+  - recurrence (string): "annual" or "once"
+
+  Only create reminders for statements with a clear date. Examples:
+  - "Jerry's birthday is June 12" -> {"title": "Jerry's birthday", \
+"date": "06-12", "recurrence": "annual"}
+  - "Sarah's wedding anniversary is October 3rd" -> \
+{"title": "Sarah's wedding anniversary", "date": "10-03", \
+"recurrence": "annual"}
+  - "Mike is moving to Denver in March 2026" -> \
+{"title": "Mike moving to Denver", "date": "2026-03-01", \
+"recurrence": "once"}
+  Do NOT create reminders for vague time references like "next week" or "soon".
 """
 
 

@@ -121,6 +121,39 @@ open | done | dropped
 
 In DynamoDB, that second query becomes a GSI on `status + due_date`. In SQLite, it's an index on `(status, due_date)`.
 
+## Table 4: Reminders
+
+Date-based reminders that surface important facts proactively.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `person_id` | string (ULID) | yes | Foreign key to people |
+| `reminder_id` | string (ULID) | yes | Time-sortable |
+| `title` | string | yes | "Jerry's birthday" |
+| `date` | string | yes | `MM-DD` for annual, `YYYY-MM-DD` for one-time |
+| `recurrence` | enum | yes | annual / once |
+| `status` | enum | yes | active / dismissed |
+| `source_interaction_id` | string | no | Which interaction created this |
+| `created_at` | string (ISO8601) | yes | Record creation |
+| `updated_at` | string (ISO8601) | yes | Last modification |
+
+**`recurrence` enum:**
+```
+annual | once
+```
+
+`annual` reminders use `MM-DD` date format (e.g., `06-12` for June 12th). They match across years.
+`once` reminders use `YYYY-MM-DD` format. They show as overdue if past due and still active.
+
+**`status` enum:**
+```
+active | dismissed
+```
+
+**Lookups needed:**
+- All reminders for a person: `WHERE person_id = ?`
+- Upcoming reminders (cross-person, next 7 days): matches annual `MM-DD` within range + one-time `YYYY-MM-DD` within range + overdue one-time
+
 ---
 
 ## Concrete Walkthrough: Jerry
@@ -283,6 +316,22 @@ CREATE TABLE briefs (
     PRIMARY KEY (person_id, brief_id),
     FOREIGN KEY (person_id) REFERENCES people(person_id)
 );
+
+CREATE TABLE reminders (
+    person_id TEXT NOT NULL,
+    reminder_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    date TEXT NOT NULL,
+    recurrence TEXT NOT NULL,
+    status TEXT NOT NULL,
+    source_interaction_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (person_id, reminder_id),
+    FOREIGN KEY (person_id) REFERENCES people(person_id)
+);
+CREATE INDEX idx_reminders_status ON reminders(status);
+CREATE INDEX idx_reminders_date ON reminders(date);
 
 CREATE TABLE audit_log (
     audit_id TEXT PRIMARY KEY,

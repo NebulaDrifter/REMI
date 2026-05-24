@@ -5,7 +5,7 @@ in DATA_MODEL.md "SQLite Schema" section.
 """
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import aiosqlite
@@ -22,6 +22,10 @@ from core.models import (
     OpenLoop,
     Person,
     RelationshipType,
+    Reminder,
+    ReminderRecurrence,
+    ReminderStatus,
+    UpcomingReminder,
 )
 
 _SCHEMA = """
@@ -79,6 +83,22 @@ CREATE TABLE IF NOT EXISTS briefs (
     PRIMARY KEY (person_id, brief_id),
     FOREIGN KEY (person_id) REFERENCES people(person_id)
 );
+
+CREATE TABLE IF NOT EXISTS reminders (
+    person_id TEXT NOT NULL,
+    reminder_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    date TEXT NOT NULL,
+    recurrence TEXT NOT NULL,
+    status TEXT NOT NULL,
+    source_interaction_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (person_id, reminder_id),
+    FOREIGN KEY (person_id) REFERENCES people(person_id)
+);
+CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders(status);
+CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders(date);
 
 CREATE TABLE IF NOT EXISTS audit_log (
     audit_id TEXT PRIMARY KEY,
@@ -169,6 +189,20 @@ def _row_to_open_loop(row: aiosqlite.Row) -> OpenLoop:
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         closed_at=row["closed_at"],
+    )
+
+
+def _row_to_reminder(row: aiosqlite.Row) -> Reminder:
+    return Reminder(
+        person_id=row["person_id"],
+        reminder_id=row["reminder_id"],
+        title=row["title"],
+        date=row["date"],
+        recurrence=ReminderRecurrence(row["recurrence"]),
+        status=ReminderStatus(row["status"]),
+        source_interaction_id=row["source_interaction_id"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
     )
 
 
@@ -295,6 +329,7 @@ class SQLiteStorage(StorageProvider):
         existing = await self.get_person(person_id)
         if not existing:
             raise NotFoundError(f"Person {person_id} not found")
+        await db.execute("DELETE FROM reminders WHERE person_id = ?", (person_id,))
         await db.execute("DELETE FROM open_loops WHERE person_id = ?", (person_id,))
         await db.execute("DELETE FROM interactions WHERE person_id = ?", (person_id,))
         await db.execute("DELETE FROM people WHERE person_id = ?", (person_id,))
@@ -484,6 +519,112 @@ class SQLiteStorage(StorageProvider):
                 )
                 async for row in cursor
             ]
+
+    # ----- Reminders -----
+
+    async def create_reminder(self, reminder: Reminder) -> Reminder:
+        db = await self._get_db()
+        await db.execute(
+            """INSERT INTO reminders
+               (person_id, reminder_id, title, date, recurrence, status,
+                source_interaction_id, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                reminder.person_id,
+                reminder.reminder_id,
+                reminder.title,
+                reminder.date,
+                reminder.recurrence.value,
+                reminder.status.value,
+                reminder.source_interaction_id,
+                reminder.created_at,
+                reminder.updated_at,
+            ),
+        )
+        await db.commit()
+        return reminder
+
+    async def list_reminders_for_person(self, person_id: str) -> list[Reminder]:
+        db = await self._get_db()
+        async with db.execute(
+            """SELECT * FROM reminders
+               WHERE person_id = ?
+               ORDER BY date""",
+            (person_id,),
+        ) as cursor:
+            return [_row_to_reminder(row) async for row in cursor]
+
+    async def list_upcoming_reminders(self, days: int = 7) -> list[UpcomingReminder]:
+        db = await self._get_db()
+        today = datetime.now(UTC).date()
+        end_date = today + timedelta(days=days)
+
+        today_mmdd = today.strftime("%m-%d")
+        end_mmdd = end_date.strftime("%m-%d")
+        today_iso = today.isoformat()
+        end_iso = end_date.isoformat()
+
+        crosses_year = end_mmdd < today_mmdd
+
+        if crosses_year:
+            annual_clause = "(r.date >= ? OR r.date <= ?)"
+        else:
+            annual_clause = "(r.date >= ? AND r.date <= ?)"
+
+        query = f"""
+            SELECT r.*, p.name as person_name FROM reminders r
+            JOIN people p ON r.person_id = p.person_id
+            WHERE r.status = 'active' AND r.recurrence = 'annual'
+              AND {annual_clause}
+            UNION ALL
+            SELECT r.*, p.name as person_name FROM reminders r
+            JOIN people p ON r.person_id = p.person_id
+            WHERE r.status = 'active' AND r.recurrence = 'once'
+              AND r.date >= ? AND r.date <= ?
+            UNION ALL
+            SELECT r.*, p.name as person_name FROM reminders r
+            JOIN people p ON r.person_id = p.person_id
+            WHERE r.status = 'active' AND r.recurrence = 'once'
+              AND r.date < ?
+            ORDER BY date
+        """  # noqa: S608
+        params = [today_mmdd, end_mmdd, today_iso, end_iso, today_iso]
+
+        async with db.execute(query, params) as cursor:
+            return [
+                UpcomingReminder(
+                    reminder=_row_to_reminder(row),
+                    person_name=row["person_name"],
+                )
+                async for row in cursor
+            ]
+
+    async def dismiss_reminder(self, person_id: str, reminder_id: str) -> Reminder:
+        db = await self._get_db()
+        now = _now()
+        result = await db.execute(
+            """UPDATE reminders SET status = ?, updated_at = ?
+               WHERE person_id = ? AND reminder_id = ?""",
+            (ReminderStatus.DISMISSED.value, now, person_id, reminder_id),
+        )
+        if result.rowcount == 0:
+            raise NotFoundError(
+                f"Reminder {reminder_id} for person {person_id} not found"
+            )
+        await db.commit()
+        reminder = await self._get_reminder(person_id, reminder_id)
+        return reminder
+
+    async def _get_reminder(self, person_id: str, reminder_id: str) -> Reminder:
+        db = await self._get_db()
+        async with db.execute(
+            "SELECT * FROM reminders WHERE person_id = ? AND reminder_id = ?",
+            (person_id, reminder_id),
+        ) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                raise NotFoundError(f"Reminder {reminder_id} not found")
+            return _row_to_reminder(row)
 
     # ----- Audit Log -----
 

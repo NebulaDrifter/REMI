@@ -65,6 +65,20 @@ class LoopStatus(str, Enum):
     DROPPED = "dropped"
 
 
+class ReminderRecurrence(str, Enum):
+    """How often a reminder recurs."""
+
+    ANNUAL = "annual"
+    ONCE = "once"
+
+
+class ReminderStatus(str, Enum):
+    """Whether a reminder is active or dismissed."""
+
+    ACTIVE = "active"
+    DISMISSED = "dismissed"
+
+
 # ============================================================================
 # Core entities — what gets stored
 # ============================================================================
@@ -153,6 +167,20 @@ class Brief(BaseModel):
     generated_at: str = Field(default_factory=_now)
 
 
+class Reminder(BaseModel):
+    """A date-based reminder tied to a person."""
+
+    person_id: str
+    reminder_id: str = Field(default_factory=_ulid)
+    title: str = Field(..., min_length=1, max_length=500)
+    date: str  # "MM-DD" for annual, "YYYY-MM-DD" for once
+    recurrence: ReminderRecurrence
+    status: ReminderStatus = ReminderStatus.ACTIVE
+    source_interaction_id: str | None = None
+    created_at: str = Field(default_factory=_now)
+    updated_at: str = Field(default_factory=_now)
+
+
 class AuditLogEntry(BaseModel):
     """A single audit log entry.
 
@@ -184,6 +212,14 @@ class ExtractedLoop(BaseModel):
     due_date: str | None = None
 
 
+class ExtractedReminder(BaseModel):
+    """A reminder proposed by the AI during extraction."""
+
+    title: str = Field(..., min_length=1, max_length=500)
+    date: str  # "MM-DD" for annual, "YYYY-MM-DD" for once
+    recurrence: ReminderRecurrence
+
+
 class ExtractionResult(BaseModel):
     """Structured output from the extraction prompt.
 
@@ -198,6 +234,7 @@ class ExtractionResult(BaseModel):
     facts: list[Fact] = Field(default_factory=list)
     tags_added: list[str] = Field(default_factory=list)
     loops: list[ExtractedLoop] = Field(default_factory=list)
+    reminders: list[ExtractedReminder] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -228,3 +265,10 @@ class IngestResponse(BaseModel):
     extraction: ExtractionResult
     person_resolution: PersonResolution
     interaction_id: str | None = None  # Only set if interaction was written
+
+
+class UpcomingReminder(BaseModel):
+    """A reminder with person name for cross-person display."""
+
+    reminder: Reminder
+    person_name: str

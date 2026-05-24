@@ -130,6 +130,29 @@ document.addEventListener("DOMContentLoaded", function () {
       loopsDiv.innerHTML = "";
     }
 
+    var remindersDiv = document.getElementById("result-reminders");
+    if (data.extraction.reminders && data.extraction.reminders.length > 0) {
+      remindersDiv.innerHTML =
+        '<span class="text-gray-500 dark:text-gray-400">Reminders:</span>' +
+        '<ul class="list-disc list-inside mt-1">' +
+        data.extraction.reminders
+          .map(function (r) {
+            return (
+              "<li>" +
+              escapeHtml(r.title) +
+              ' <span class="text-gray-400 dark:text-gray-500">(' +
+              escapeHtml(r.date) +
+              ", " +
+              escapeHtml(r.recurrence) +
+              ")</span></li>"
+            );
+          })
+          .join("") +
+        "</ul>";
+    } else {
+      remindersDiv.innerHTML = "";
+    }
+
     showResolution(res);
     resultDiv.classList.remove("hidden");
   }

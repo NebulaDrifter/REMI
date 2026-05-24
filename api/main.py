@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from api.routes import briefs, frontend, interactions, loops, people
+from api.routes import briefs, frontend, interactions, loops, people, reminders
 from config.settings import (
     Settings,
     build_ai,
@@ -89,6 +89,7 @@ app.include_router(people.router)
 app.include_router(interactions.router)
 app.include_router(loops.router)
 app.include_router(briefs.router)
+app.include_router(reminders.router)
 app.include_router(frontend.router)
 
 STATIC_DIR = Path(__file__).parent.parent / "frontend" / "static"

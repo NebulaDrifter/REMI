@@ -61,9 +61,17 @@ async def _enrich_people(people: list[Person], storage: StorageProvider) -> list
 
 
 @router.get("/", response_class=HTMLResponse)
-async def capture_page(request: Request):
-    """Capture screen — primary daily-use page."""
-    return templates.TemplateResponse(request, "capture.html", {"active": "capture"})
+async def capture_page(
+    request: Request,
+    storage: StorageProvider = Depends(get_storage),
+):
+    """Capture screen — primary daily-use page with upcoming reminders."""
+    upcoming = await storage.list_upcoming_reminders(days=7)
+    return templates.TemplateResponse(
+        request,
+        "capture.html",
+        {"active": "capture", "upcoming_reminders": upcoming},
+    )
 
 
 @router.get("/app/people", response_class=HTMLResponse)
@@ -100,6 +108,25 @@ async def people_search_html(
     )
 
 
+@router.patch(
+    "/api/reminders/{person_id}/{reminder_id}/dismiss",
+    response_class=HTMLResponse,
+)
+async def dismiss_reminder_html(
+    person_id: str,
+    reminder_id: str,
+    storage: StorageProvider = Depends(get_storage),
+):
+    """HTMX endpoint: dismiss a reminder and remove it from the list."""
+    from adapters.storage.base import NotFoundError
+
+    try:
+        await storage.dismiss_reminder(person_id, reminder_id)
+    except NotFoundError:
+        pass
+    return HTMLResponse("")
+
+
 @router.get("/app/people/{person_id}", response_class=HTMLResponse)
 async def person_detail_page(
     request: Request,
@@ -114,6 +141,8 @@ async def person_detail_page(
     interactions = await storage.list_interactions_for_person(person_id)
     loops = await storage.list_open_loops_for_person(person_id)
     open_loops = [lp for lp in loops if lp.status.value == "open"]
+    reminders = await storage.list_reminders_for_person(person_id)
+    active_reminders = [r for r in reminders if r.status.value == "active"]
 
     return templates.TemplateResponse(
         request,
@@ -125,6 +154,7 @@ async def person_detail_page(
             "avatar_color": _avatar_color(person.name),
             "interactions": interactions,
             "open_loops": open_loops,
+            "reminders": active_reminders,
         },
     )
 

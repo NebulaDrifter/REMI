@@ -18,6 +18,8 @@ from core.models import (
     LoopStatus,
     OpenLoop,
     Person,
+    Reminder,
+    UpcomingReminder,
 )
 
 # ============================================================================
@@ -192,6 +194,32 @@ class StorageProvider(ABC):
         self, person_id: str, limit: int = 20
     ) -> list[Brief]:
         """List stored briefs for a person, newest first."""
+        ...
+
+    # ----- Reminders -----
+
+    @abstractmethod
+    async def create_reminder(self, reminder: Reminder) -> Reminder:
+        """Store a new reminder."""
+        ...
+
+    @abstractmethod
+    async def list_reminders_for_person(self, person_id: str) -> list[Reminder]:
+        """List all reminders for a person."""
+        ...
+
+    @abstractmethod
+    async def list_upcoming_reminders(self, days: int = 7) -> list[UpcomingReminder]:
+        """List upcoming reminders across all people, plus overdue one-time."""
+        ...
+
+    @abstractmethod
+    async def dismiss_reminder(self, person_id: str, reminder_id: str) -> Reminder:
+        """Dismiss a reminder.
+
+        Raises:
+            NotFoundError: If reminder doesn't exist.
+        """
         ...
 
     # ----- Audit Log -----
