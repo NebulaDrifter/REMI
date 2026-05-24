@@ -11,7 +11,7 @@
         type="text"
         id="search-input"
         placeholder="Search by name..."
-        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         hx-get="/api/people/search-html"
         hx-trigger="keyup changed delay:300ms"
         hx-target="#people-list"
@@ -22,27 +22,27 @@
 
 <div id="people-list" class="space-y-2">
     {% for person in people %}
-    <a href="/app/people/{{ person.person_id }}" class="block bg-white border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors">
+    <a href="/app/people/{{ person.person_id }}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
         <div class="flex items-center justify-between">
             <div>
-                <span class="font-medium text-gray-900">{{ person.name }}</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">{{ person.name }}</span>
                 {% if person.company %}
-                <span class="text-gray-500 text-sm ml-2">{{ person.company }}</span>
+                <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">{{ person.company }}</span>
                 {% endif %}
             </div>
-            <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">{{ person.relationship_type }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ person.relationship_type }}</span>
         </div>
         {% if person.tags %}
         <div class="mt-1 flex gap-1 flex-wrap">
             {% for tag in person.tags|sort %}
-            <span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{{ tag }}</span>
+            <span class="text-xs bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">{{ tag }}</span>
             {% endfor %}
         </div>
         {% endif %}
     </a>
     {% endfor %}
     {% if not people %}
-    <p class="text-gray-500 text-sm text-center py-8">No people yet. Capture an interaction to get started.</p>
+    <p class="text-gray-500 dark:text-gray-400 text-sm text-center py-8">No people yet. Capture an interaction to get started.</p>
     {% endif %}
 </div>
 {% endblock %}
