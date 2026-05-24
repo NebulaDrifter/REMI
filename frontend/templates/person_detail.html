@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}REMI — {{ person.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="/app/people" class="text-sm text-blue-600 hover:text-blue-800">&larr; Back to People</a>
+</div>
+
+<div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+    <div class="flex items-start justify-between">
+        <div>
+            <h1 class="text-2xl font-bold">{{ person.name }}</h1>
+            {% if person.nickname %}
+            <span class="text-gray-500 text-sm">"{{ person.nickname }}"</span>
+            {% endif %}
+        </div>
+        <div class="flex gap-2">
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{{ person.relationship_type }}</span>
+            <a href="/app/people/{{ person.person_id }}/brief"
+               class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                Brief
+            </a>
+        </div>
+    </div>
+
+    {% if person.company %}
+    <p class="text-gray-600 text-sm mt-1">{{ person.company }}</p>
+    {% endif %}
+
+    {% if person.tags %}
+    <div class="mt-2 flex gap-1 flex-wrap">
+        {% for tag in person.tags|sort %}
+        <span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{{ tag }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if person.pronunciation %}
+    <p class="text-gray-500 text-xs mt-2">Pronunciation: {{ person.pronunciation }}</p>
+    {% endif %}
+
+    {% if person.notes %}
+    <p class="text-gray-600 text-sm mt-2">{{ person.notes }}</p>
+    {% endif %}
+</div>
+
+{% if open_loops %}
+<div class="mb-6">
+    <h2 class="text-lg font-semibold mb-2">Open Loops</h2>
+    <div class="space-y-2">
+        {% for lp in open_loops %}
+        <div class="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+            <div>
+                <p class="text-sm">{{ lp.description }}</p>
+                {% if lp.due_date %}
+                <p class="text-xs text-gray-500 mt-0.5">Due: {{ lp.due_date }}</p>
+                {% endif %}
+            </div>
+            <div class="flex gap-1">
+                <button
+                    class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100"
+                    hx-patch="/loops/{{ person.person_id }}/{{ lp.loop_id }}"
+                    hx-vals='{"status": "done"}'
+                    hx-headers='{"Content-Type": "application/json"}'
+                    hx-swap="outerHTML"
+                    hx-target="closest div.rounded-lg"
+                >Done</button>
+                <button
+                    class="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded hover:bg-gray-100"
+                    hx-patch="/loops/{{ person.person_id }}/{{ lp.loop_id }}"
+                    hx-vals='{"status": "dropped"}'
+                    hx-headers='{"Content-Type": "application/json"}'
+                    hx-swap="outerHTML"
+                    hx-target="closest div.rounded-lg"
+                >Drop</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div>
+    <h2 class="text-lg font-semibold mb-2">Interactions</h2>
+    {% if interactions %}
+    <div class="space-y-3">
+        {% for ix in interactions %}
+        <div class="bg-white border border-gray-200 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ ix.interaction_type }}</span>
+                <span class="text-xs text-gray-400">{{ ix.date[:10] }}</span>
+            </div>
+            <p class="text-sm">{{ ix.extracted_summary }}</p>
+            {% if ix.facts %}
+            <div class="mt-2 space-y-1">
+                {% for fact in ix.facts %}
+                <p class="text-xs text-gray-600">
+                    <span class="text-gray-400">[{{ fact.category }}]</span> {{ fact.content }}
+                </p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-sm text-center py-4">No interactions yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

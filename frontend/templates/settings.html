@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}REMI — Settings{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Settings</h1>
+
+<div class="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+    <div class="grid grid-cols-1 gap-3 text-sm">
+        <div class="flex justify-between py-2 border-b border-gray-100">
+            <span class="text-gray-500">Version</span>
+            <span class="font-medium">{{ version }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+            <span class="text-gray-500">Deployment</span>
+            <span class="font-medium">{{ deployment }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+            <span class="text-gray-500">Storage Backend</span>
+            <span class="font-medium">{{ storage_backend }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+            <span class="text-gray-500">AI Provider</span>
+            <span class="font-medium">{{ ai_provider }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+            <span class="text-gray-500">AI Model</span>
+            <span class="font-medium">{{ ai_model }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+            <span class="text-gray-500">Blob Backend</span>
+            <span class="font-medium">{{ blob_backend }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+            <span class="text-gray-500">Transcription</span>
+            <span class="font-medium">{{ transcription }}</span>
+        </div>
+        <div class="flex justify-between py-2">
+            <span class="text-gray-500">Audio Retention</span>
+            <span class="font-medium">{{ audio_retention_days }} days</span>
+        </div>
+    </div>
+</div>
+
+<p class="text-xs text-gray-400 mt-4 text-center">
+    Settings are read-only. Edit <code>.env</code> and restart to change.
+</p>
+{% endblock %}

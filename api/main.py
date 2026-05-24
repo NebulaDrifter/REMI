@@ -6,11 +6,13 @@ Cloud (v1.1): wrapped by Mangum in deployments/aws/lambda_handler.py
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from api.routes import briefs, interactions, loops, people
+from api.routes import briefs, frontend, interactions, loops, people
 from config.settings import (
     Settings,
     build_ai,
@@ -87,6 +89,11 @@ app.include_router(people.router)
 app.include_router(interactions.router)
 app.include_router(loops.router)
 app.include_router(briefs.router)
+app.include_router(frontend.router)
+
+STATIC_DIR = Path(__file__).parent.parent / "frontend" / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 @app.get("/health")

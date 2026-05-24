@@ -1,0 +1,23 @@
+{% for person in people %}
+<a href="/app/people/{{ person.person_id }}" class="block bg-white border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors">
+    <div class="flex items-center justify-between">
+        <div>
+            <span class="font-medium text-gray-900">{{ person.name }}</span>
+            {% if person.company %}
+            <span class="text-gray-500 text-sm ml-2">{{ person.company }}</span>
+            {% endif %}
+        </div>
+        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">{{ person.relationship_type }}</span>
+    </div>
+    {% if person.tags %}
+    <div class="mt-1 flex gap-1 flex-wrap">
+        {% for tag in person.tags|sort %}
+        <span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{{ tag }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+</a>
+{% endfor %}
+{% if not people %}
+<p class="text-gray-500 text-sm text-center py-8">No matches found.</p>
+{% endif %}
