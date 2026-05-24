@@ -12,6 +12,14 @@ document.addEventListener("DOMContentLoaded", function () {
   let currentExtraction = null;
   let currentPersonId = null;
 
+  document.getElementById("dismiss-btn").addEventListener("click", function () {
+    resultDiv.classList.add("hidden");
+    confirmArea.classList.add("hidden");
+    saveSuccess.classList.add("hidden");
+    currentExtraction = null;
+    currentPersonId = null;
+  });
+
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
     const text = rawInput.value.trim();
