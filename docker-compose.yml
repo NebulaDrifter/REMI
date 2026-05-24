@@ -13,6 +13,8 @@ services:
       - "127.0.0.1:8000:8000"
     env_file:
       - .env
+    environment:
+      - REMI_HOST=0.0.0.0
     volumes:
       # Persist SQLite database across restarts
       - ./data:/app/data
