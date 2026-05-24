@@ -21,17 +21,20 @@
         .htmx-indicator { display: none; }
         .htmx-request .htmx-indicator { display: inline-block; }
         .htmx-request.htmx-indicator { display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 0.8s linear infinite; display: inline-block; }
+        * { transition-property: background-color, border-color, color; transition-duration: 150ms; }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors">
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100">
     <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div class="max-w-3xl mx-auto flex items-center justify-between">
             <a href="/" class="text-xl font-bold text-gray-900 dark:text-white">REMI</a>
-            <div class="flex items-center gap-4 text-sm">
-                <a href="/" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white {% if active == 'capture' %}font-semibold text-gray-900 dark:text-white{% endif %}">Capture</a>
-                <a href="/app/people" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white {% if active == 'people' %}font-semibold text-gray-900 dark:text-white{% endif %}">People</a>
-                <a href="/app/settings" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white {% if active == 'settings' %}font-semibold text-gray-900 dark:text-white{% endif %}">Settings</a>
-                <button id="theme-toggle" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1" title="Toggle dark mode">
+            <div class="flex items-center gap-1 text-sm">
+                <a href="/" class="px-3 py-1.5 rounded-md {% if active == 'capture' %}bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">Capture</a>
+                <a href="/app/people" class="px-3 py-1.5 rounded-md {% if active == 'people' %}bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">People</a>
+                <a href="/app/settings" class="px-3 py-1.5 rounded-md {% if active == 'settings' %}bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">Settings</a>
+                <button id="theme-toggle" class="ml-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700" title="Toggle dark mode">
                     <span id="theme-icon-light" class="hidden dark:inline">&#9788;</span>
                     <span id="theme-icon-dark" class="inline dark:hidden">&#9790;</span>
                 </button>
@@ -41,12 +44,22 @@
     <main class="max-w-3xl mx-auto px-4 py-6">
         {% block content %}{% endblock %}
     </main>
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg hidden z-50"></div>
     <script>
         document.getElementById('theme-toggle').addEventListener('click', function() {
             var html = document.documentElement;
             var isDark = html.classList.toggle('dark');
             localStorage.setItem('remi-theme', isDark ? 'dark' : 'light');
         });
+        function showToast(message, type) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg z-50';
+            if (type === 'success') toast.classList.add('bg-green-600', 'text-white');
+            else if (type === 'error') toast.classList.add('bg-red-600', 'text-white');
+            else toast.classList.add('bg-gray-800', 'dark:bg-gray-200', 'text-white', 'dark:text-gray-900');
+            setTimeout(function() { toast.classList.add('hidden'); }, 3000);
+        }
     </script>
     {% block scripts %}{% endblock %}
 </body>

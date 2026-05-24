@@ -10,28 +10,33 @@
     <h1 class="text-2xl font-bold">Brief: {{ person_name }}</h1>
     <button
         id="generate-btn"
-        class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+        class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"
         onclick="generateBrief()"
-    >Generate New Brief</button>
+    >
+        <span id="gen-btn-text">Generate New Brief</span>
+        <span id="gen-spinner" class="hidden spinner">&#9696;</span>
+    </button>
 </div>
-
-<div id="generate-spinner" class="hidden text-gray-400 dark:text-gray-500 text-sm mb-4">Generating...</div>
 
 <div id="briefs-list" class="space-y-4">
     {% for b in briefs %}
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <div class="flex items-center justify-between mb-2">
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{ b.generated_at[:19] }}</span>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-gray-400 dark:text-gray-500 brief-time" data-time="{{ b.generated_at }}">{{ b.generated_at[:19] }}</span>
             <button
-                class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
                 onclick="copyText(this)"
             >Copy</button>
         </div>
-        <div class="brief-text prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ b.brief_text }}</div>
+        <div class="brief-text text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ b.brief_text }}</div>
     </div>
     {% endfor %}
     {% if not briefs %}
-    <p id="no-briefs" class="text-gray-500 dark:text-gray-400 text-sm text-center py-8">No briefs generated yet. Click "Generate New Brief" to create one.</p>
+    <div id="no-briefs" class="text-center py-12">
+        <p class="text-gray-400 dark:text-gray-500 text-4xl mb-3">📋</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">No briefs generated yet.</p>
+        <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">Click "Generate New Brief" to create one.</p>
+    </div>
     {% endif %}
 </div>
 {% endblock %}
@@ -40,9 +45,10 @@
 <script>
 function generateBrief() {
     var btn = document.getElementById('generate-btn');
-    var spinner = document.getElementById('generate-spinner');
+    var btnText = document.getElementById('gen-btn-text');
+    var spinner = document.getElementById('gen-spinner');
     btn.disabled = true;
-    btn.classList.add('opacity-50');
+    btnText.textContent = 'Generating...';
     spinner.classList.remove('hidden');
 
     fetch('/people/{{ person_id }}/brief', { method: 'POST' })
@@ -53,25 +59,26 @@ function generateBrief() {
 
             var list = document.getElementById('briefs-list');
             var card = document.createElement('div');
-            card.className = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4';
+            card.className = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm';
             card.innerHTML =
-                '<div class="flex items-center justify-between mb-2">' +
-                '<span class="text-xs text-gray-400 dark:text-gray-500">' + data.generated_at.substring(0, 19) + '</span>' +
-                '<button class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600" onclick="copyText(this)">Copy</button>' +
+                '<div class="flex items-center justify-between mb-3">' +
+                '<span class="text-xs text-gray-400 dark:text-gray-500">Just now</span>' +
+                '<button class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600" onclick="copyText(this)">Copy</button>' +
                 '</div>' +
-                '<div class="brief-text prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">' + escapeHtml(data.brief) + '</div>';
+                '<div class="brief-text text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">' + escapeHtml(data.brief) + '</div>';
             list.insertBefore(card, list.firstChild);
+            showToast('Brief generated', 'success');
         })
-        .catch(function(err) { alert('Error: ' + err.message); })
+        .catch(function(err) { showToast('Error: ' + err.message, 'error'); })
         .finally(function() {
             btn.disabled = false;
-            btn.classList.remove('opacity-50');
+            btnText.textContent = 'Generate New Brief';
             spinner.classList.add('hidden');
         });
 }
 
 function copyText(btn) {
-    var text = btn.closest('.rounded-lg').querySelector('.brief-text').textContent;
+    var text = btn.closest('.rounded-xl').querySelector('.brief-text').textContent;
     navigator.clipboard.writeText(text).then(function() {
         btn.textContent = 'Copied!';
         setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
@@ -83,5 +90,19 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+(function() {
+    document.querySelectorAll('.brief-time').forEach(function(el) {
+        var time = el.dataset.time;
+        if (!time) return;
+        var date = new Date(time + (time.includes('Z') ? '' : 'Z'));
+        var diff = (Date.now() - date.getTime()) / 1000;
+        if (diff < 60) el.textContent = 'Just now';
+        else if (diff < 3600) el.textContent = Math.floor(diff / 60) + 'm ago';
+        else if (diff < 86400) el.textContent = Math.floor(diff / 3600) + 'h ago';
+        else if (diff < 604800) el.textContent = Math.floor(diff / 86400) + 'd ago';
+        else el.textContent = date.toLocaleDateString();
+    });
+})();
 </script>
 {% endblock %}

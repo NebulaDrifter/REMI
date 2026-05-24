@@ -11,7 +11,7 @@
         type="text"
         id="search-input"
         placeholder="Search by name..."
-        class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         hx-get="/api/people/search-html"
         hx-trigger="keyup changed delay:300ms"
         hx-target="#people-list"
@@ -21,19 +21,32 @@
 </div>
 
 <div id="people-list" class="space-y-2">
-    {% for person in people %}
-    <a href="/app/people/{{ person.person_id }}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
-        <div class="flex items-center justify-between">
-            <div>
-                <span class="font-medium text-gray-900 dark:text-gray-100">{{ person.name }}</span>
-                {% if person.company %}
-                <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">{{ person.company }}</span>
-                {% endif %}
+    {% for item in people_data %}
+    {% set person = item.person %}
+    <a href="/app/people/{{ person.person_id }}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 hover:border-blue-300 dark:hover:border-blue-600 transition-colors shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="flex-shrink-0 w-10 h-10 {{ item.avatar_color }} rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                {{ item.initials }}
             </div>
-            <span class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ person.relationship_type }}</span>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                    <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ person.name }}</span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded ml-2 flex-shrink-0">{{ person.relationship_type }}</span>
+                </div>
+                <div class="flex items-center justify-between mt-0.5">
+                    {% if person.company %}
+                    <span class="text-gray-500 dark:text-gray-400 text-sm truncate">{{ person.company }}</span>
+                    {% else %}
+                    <span></span>
+                    {% endif %}
+                    {% if item.last_interaction %}
+                    <span class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">Last: {{ item.last_interaction }}</span>
+                    {% endif %}
+                </div>
+            </div>
         </div>
         {% if person.tags %}
-        <div class="mt-1 flex gap-1 flex-wrap">
+        <div class="mt-2 ml-13 flex gap-1 flex-wrap">
             {% for tag in person.tags|sort %}
             <span class="text-xs bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">{{ tag }}</span>
             {% endfor %}
@@ -41,8 +54,12 @@
         {% endif %}
     </a>
     {% endfor %}
-    {% if not people %}
-    <p class="text-gray-500 dark:text-gray-400 text-sm text-center py-8">No people yet. Capture an interaction to get started.</p>
+    {% if not people_data %}
+    <div class="text-center py-12">
+        <p class="text-gray-400 dark:text-gray-500 text-4xl mb-3">👋</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">No people yet.</p>
+        <a href="/" class="text-sm text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">Capture your first interaction &rarr;</a>
+    </div>
     {% endif %}
 </div>
 {% endblock %}

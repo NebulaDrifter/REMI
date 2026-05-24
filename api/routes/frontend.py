@@ -8,11 +8,56 @@ from fastapi.templating import Jinja2Templates
 
 from adapters.storage.base import StorageProvider
 from api.dependencies import get_storage
+from core.models import Person
 
 TEMPLATES_DIR = Path(__file__).parent.parent.parent / "frontend" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 router = APIRouter(tags=["frontend"])
+
+
+def _initials(name: str) -> str:
+    """Get up to 2 initials from a name."""
+    parts = name.strip().split()
+    if len(parts) >= 2:
+        return (parts[0][0] + parts[-1][0]).upper()
+    return name[0].upper() if name else "?"
+
+
+_AVATAR_COLORS = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-purple-500",
+    "bg-pink-500",
+    "bg-yellow-500",
+    "bg-red-500",
+    "bg-indigo-500",
+    "bg-teal-500",
+]
+
+
+def _avatar_color(name: str) -> str:
+    """Deterministic color from name."""
+    return _AVATAR_COLORS[sum(ord(c) for c in name) % len(_AVATAR_COLORS)]
+
+
+async def _enrich_people(people: list[Person], storage: StorageProvider) -> list[dict]:
+    """Add initials, avatar color, and last interaction date to people."""
+    result = []
+    for person in people:
+        interactions = await storage.list_interactions_for_person(
+            person.person_id, limit=1
+        )
+        last_interaction = interactions[0].date[:10] if interactions else None
+        result.append(
+            {
+                "person": person,
+                "initials": _initials(person.name),
+                "avatar_color": _avatar_color(person.name),
+                "last_interaction": last_interaction,
+            }
+        )
+    return result
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -28,8 +73,11 @@ async def people_list_page(
 ):
     """People list screen."""
     people = await storage.list_people()
+    people_data = await _enrich_people(people, storage)
     return templates.TemplateResponse(
-        request, "people_list.html", {"active": "people", "people": people}
+        request,
+        "people_list.html",
+        {"active": "people", "people_data": people_data},
     )
 
 
@@ -44,8 +92,11 @@ async def people_search_html(
         people = await storage.find_people_by_name(name)
     else:
         people = await storage.list_people()
+    people_data = await _enrich_people(people, storage)
     return templates.TemplateResponse(
-        request, "people_search_results.html", {"people": people}
+        request,
+        "people_search_results.html",
+        {"people_data": people_data},
     )
 
 
@@ -70,6 +121,8 @@ async def person_detail_page(
         {
             "active": "people",
             "person": person,
+            "initials": _initials(person.name),
+            "avatar_color": _avatar_color(person.name),
             "interactions": interactions,
             "open_loops": open_loops,
         },

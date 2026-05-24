@@ -1,16 +1,20 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const form = document.getElementById("capture-form");
-  const rawInput = document.getElementById("raw-input");
-  const resultDiv = document.getElementById("extraction-result");
-  const spinner = document.getElementById("extract-spinner");
-  const confirmArea = document.getElementById("confirm-area");
-  const confirmBtn = document.getElementById("confirm-btn");
-  const confirmSpinner = document.getElementById("confirm-spinner");
-  const saveSuccess = document.getElementById("save-success");
-  const resolutionArea = document.getElementById("resolution-area");
+  var form = document.getElementById("capture-form");
+  var rawInput = document.getElementById("raw-input");
+  var resultDiv = document.getElementById("extraction-result");
+  var extractBtn = document.getElementById("extract-btn");
+  var extractBtnText = document.getElementById("extract-btn-text");
+  var extractSpinner = document.getElementById("extract-spinner");
+  var confirmArea = document.getElementById("confirm-area");
+  var confirmBtn = document.getElementById("confirm-btn");
+  var confirmBtnText = document.getElementById("confirm-btn-text");
+  var confirmSpinner = document.getElementById("confirm-spinner");
+  var saveSuccess = document.getElementById("save-success");
+  var resolutionArea = document.getElementById("resolution-area");
 
-  let currentExtraction = null;
-  let currentPersonId = null;
+  var currentExtraction = null;
+  var currentPersonId = null;
+  var currentPersonName = null;
 
   document.getElementById("dismiss-btn").addEventListener("click", function () {
     resultDiv.classList.add("hidden");
@@ -18,39 +22,44 @@ document.addEventListener("DOMContentLoaded", function () {
     saveSuccess.classList.add("hidden");
     currentExtraction = null;
     currentPersonId = null;
+    currentPersonName = null;
   });
 
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
-    const text = rawInput.value.trim();
+    var text = rawInput.value.trim();
     if (!text) return;
 
-    spinner.style.display = "inline-block";
+    extractBtn.disabled = true;
+    extractBtnText.textContent = "Extracting...";
+    extractSpinner.classList.remove("hidden");
     resultDiv.classList.add("hidden");
     saveSuccess.classList.add("hidden");
 
     try {
-      const resp = await fetch("/interactions/text", {
+      var resp = await fetch("/interactions/text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ raw_input: text }),
       });
-      const data = await resp.json();
+      var data = await resp.json();
       if (!resp.ok) {
-        alert("Error: " + (data.detail || "Unknown error"));
+        showToast("Error: " + (data.detail || "Unknown error"), "error");
         return;
       }
       showResult(data);
     } catch (err) {
-      alert("Network error: " + err.message);
+      showToast("Network error: " + err.message, "error");
     } finally {
-      spinner.style.display = "none";
+      extractBtn.disabled = false;
+      extractBtnText.textContent = "Extract";
+      extractSpinner.classList.add("hidden");
     }
   });
 
   function showResult(data) {
     currentExtraction = data.extraction;
-    const res = data.person_resolution;
+    var res = data.person_resolution;
 
     document.getElementById("result-person").textContent =
       data.extraction.person_name;
@@ -59,53 +68,62 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("result-summary").textContent =
       data.extraction.summary;
 
-    const factsDiv = document.getElementById("result-facts");
+    var factsDiv = document.getElementById("result-facts");
     if (data.extraction.facts.length > 0) {
       factsDiv.innerHTML =
-        '<span class="text-gray-500">Facts:</span><ul class="list-disc list-inside mt-1">' +
+        '<span class="text-gray-500 dark:text-gray-400">Facts:</span>' +
+        '<ul class="list-disc list-inside mt-1">' +
         data.extraction.facts
-          .map(
-            (f) =>
-              "<li><span class='text-gray-400'>[" +
+          .map(function (f) {
+            return (
+              '<li><span class="text-gray-400 dark:text-gray-500">[' +
               escapeHtml(f.category) +
               "]</span> " +
               escapeHtml(f.content) +
               "</li>"
-          )
+            );
+          })
           .join("") +
         "</ul>";
     } else {
       factsDiv.innerHTML = "";
     }
 
-    const tagsDiv = document.getElementById("result-tags");
+    var tagsDiv = document.getElementById("result-tags");
     if (data.extraction.tags_added.length > 0) {
       tagsDiv.innerHTML =
-        '<span class="text-gray-500">Tags:</span> ' +
+        '<span class="text-gray-500 dark:text-gray-400">Tags:</span> ' +
         data.extraction.tags_added
-          .map(
-            (t) =>
-              '<span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded mr-1">' +
+          .map(function (t) {
+            return (
+              '<span class="bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded mr-1">' +
               escapeHtml(t) +
               "</span>"
-          )
+            );
+          })
           .join("");
     } else {
       tagsDiv.innerHTML = "";
     }
 
-    const loopsDiv = document.getElementById("result-loops");
+    var loopsDiv = document.getElementById("result-loops");
     if (data.extraction.loops.length > 0) {
       loopsDiv.innerHTML =
-        '<span class="text-gray-500">Loops:</span><ul class="list-disc list-inside mt-1">' +
+        '<span class="text-gray-500 dark:text-gray-400">Loops:</span>' +
+        '<ul class="list-disc list-inside mt-1">' +
         data.extraction.loops
-          .map(
-            (l) =>
+          .map(function (l) {
+            return (
               "<li>" +
               escapeHtml(l.description) +
-              (l.due_date ? " (due: " + escapeHtml(l.due_date) + ")" : "") +
+              (l.due_date
+                ? ' <span class="text-gray-400 dark:text-gray-500">(due: ' +
+                  escapeHtml(l.due_date) +
+                  ")</span>"
+                : "") +
               "</li>"
-          )
+            );
+          })
           .join("") +
         "</ul>";
     } else {
@@ -118,47 +136,60 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function showResolution(res) {
     confirmArea.classList.add("hidden");
+    saveSuccess.classList.add("hidden");
     currentPersonId = null;
+    currentPersonName = null;
 
     if (res.status === "matched") {
       currentPersonId = res.matched_person.person_id;
+      currentPersonName = res.matched_person.name;
       resolutionArea.innerHTML =
-        '<p class="text-sm text-green-700">Matched: <strong>' +
+        '<p class="text-sm text-green-700 dark:text-green-400">Matched: <strong>' +
         escapeHtml(res.matched_person.name) +
         "</strong></p>";
       confirmArea.classList.remove("hidden");
     } else if (res.status === "ambiguous") {
       resolutionArea.innerHTML =
-        '<p class="text-sm text-yellow-700 mb-2">Multiple matches found. Pick one:</p>' +
+        '<p class="text-sm text-yellow-700 dark:text-yellow-400 mb-2">Multiple matches found. Pick one:</p>' +
         res.candidates
-          .map(
-            (c) =>
-              '<button class="block w-full text-left text-sm bg-yellow-50 border border-yellow-200 rounded p-2 mb-1 hover:bg-yellow-100" data-person-id="' +
+          .map(function (c) {
+            return (
+              '<button class="block w-full text-left text-sm bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 text-gray-900 dark:text-gray-100 rounded-lg p-2.5 mb-1 hover:bg-yellow-100 dark:hover:bg-yellow-900/50" data-person-id="' +
               escapeHtml(c.person_id) +
+              '" data-person-name="' +
+              escapeHtml(c.name) +
               '">' +
               escapeHtml(c.name) +
-              (c.company ? " — " + escapeHtml(c.company) : "") +
+              (c.company
+                ? ' <span class="text-gray-500 dark:text-gray-400">— ' +
+                  escapeHtml(c.company) +
+                  "</span>"
+                : "") +
               "</button>"
-          )
+            );
+          })
           .join("");
-      resolutionArea.querySelectorAll("[data-person-id]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          currentPersonId = this.dataset.personId;
-          resolutionArea.innerHTML =
-            '<p class="text-sm text-green-700">Selected: <strong>' +
-            escapeHtml(this.textContent) +
-            "</strong></p>";
-          confirmArea.classList.remove("hidden");
+      resolutionArea
+        .querySelectorAll("[data-person-id]")
+        .forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            currentPersonId = this.dataset.personId;
+            currentPersonName = this.dataset.personName;
+            resolutionArea.innerHTML =
+              '<p class="text-sm text-green-700 dark:text-green-400">Selected: <strong>' +
+              escapeHtml(currentPersonName) +
+              "</strong></p>";
+            confirmArea.classList.remove("hidden");
+          });
         });
-      });
     } else {
       resolutionArea.innerHTML =
-        '<p class="text-sm text-gray-600 mb-2">Person not found. Create new?</p>' +
+        '<p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Person not found. Create new?</p>' +
         '<form id="create-person-form" class="flex gap-2">' +
         '<input type="text" name="name" placeholder="Full name" value="' +
         escapeHtml(currentExtraction.person_name) +
-        '" class="border border-gray-300 rounded px-2 py-1 text-sm flex-1" required>' +
-        '<select name="relationship_type" class="border border-gray-300 rounded px-2 py-1 text-sm">' +
+        '" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg px-2.5 py-1.5 text-sm flex-1" required>' +
+        '<select name="relationship_type" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg px-2.5 py-1.5 text-sm">' +
         '<option value="colleague">Colleague</option>' +
         '<option value="friend">Friend</option>' +
         '<option value="client">Client</option>' +
@@ -169,16 +200,16 @@ document.addEventListener("DOMContentLoaded", function () {
         '<option value="family">Family</option>' +
         '<option value="other">Other</option>' +
         "</select>" +
-        '<button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Create</button>' +
+        '<button type="submit" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700">Create</button>' +
         "</form>";
 
       document
         .getElementById("create-person-form")
         .addEventListener("submit", async function (e) {
           e.preventDefault();
-          const formData = new FormData(this);
+          var formData = new FormData(this);
           try {
-            const resp = await fetch("/people", {
+            var resp = await fetch("/people", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -186,17 +217,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 relationship_type: formData.get("relationship_type"),
               }),
             });
-            const person = await resp.json();
+            var person = await resp.json();
             if (resp.ok) {
               currentPersonId = person.person_id;
+              currentPersonName = person.name;
               resolutionArea.innerHTML =
-                '<p class="text-sm text-green-700">Created: <strong>' +
+                '<p class="text-sm text-green-700 dark:text-green-400">Created: <strong>' +
                 escapeHtml(person.name) +
                 "</strong></p>";
               confirmArea.classList.remove("hidden");
             }
           } catch (err) {
-            alert("Error creating person: " + err.message);
+            showToast("Error creating person: " + err.message, "error");
           }
         });
     }
@@ -204,10 +236,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   confirmBtn.addEventListener("click", async function () {
     if (!currentPersonId || !currentExtraction) return;
-    confirmSpinner.style.display = "inline-block";
+    confirmBtn.disabled = true;
+    confirmBtnText.textContent = "Saving...";
+    confirmSpinner.classList.remove("hidden");
 
     try {
-      const resp = await fetch("/interactions/confirm", {
+      var resp = await fetch("/interactions/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -217,21 +251,28 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       if (resp.ok) {
         confirmArea.classList.add("hidden");
+        var link = document.getElementById("save-success-link");
+        link.href = "/app/people/" + currentPersonId;
+        link.textContent = "View " + currentPersonName + " →";
         saveSuccess.classList.remove("hidden");
         rawInput.value = "";
+        rawInput.style.height = "auto";
+        showToast("Interaction saved", "success");
       } else {
-        const data = await resp.json();
-        alert("Error: " + (data.detail || "Save failed"));
+        var data = await resp.json();
+        showToast("Error: " + (data.detail || "Save failed"), "error");
       }
     } catch (err) {
-      alert("Error: " + err.message);
+      showToast("Error: " + err.message, "error");
     } finally {
-      confirmSpinner.style.display = "none";
+      confirmBtn.disabled = false;
+      confirmBtnText.textContent = "Save";
+      confirmSpinner.classList.add("hidden");
     }
   });
 
   function escapeHtml(text) {
-    const div = document.createElement("div");
+    var div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
