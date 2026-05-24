@@ -1,33 +1,49 @@
 """Local filesystem blob adapter.
 
 Stores blobs on local disk. For v1.0 local deployments.
-
-Implementation: Phase 4 of BUILD_PLAN.md.
 """
 
-# TODO (Phase 4): Implement FilesystemBlob(BlobProvider).
-#
-# Implementation notes:
-# - Base directory configurable (BLOB_FILESYSTEM_PATH env var)
-# - Create base dir on initialize() if missing, with mode 0o700
-# - Sanitize keys aggressively:
-#   - Reject any key containing ".." or starting with "/"
-#   - Reject any key with characters outside [a-zA-Z0-9/_.-]
-#   - Use os.path.commonpath to verify resolved path is inside base dir
-# - File permissions: 0o600 on every written file
-# - Use aiofiles for async I/O
-# - delete_older_than walks the tree, checks mtime, deletes old files
-
+import asyncio
+import os
+import re
+import time
 from pathlib import Path
 
-from adapters.blob.base import BlobProvider
+from adapters.blob.base import (
+    BlobNotFoundError,
+    BlobProvider,
+    BlobTooLargeError,
+    InvalidKeyError,
+)
+
+_VALID_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9/_.\-]+$")
+
+
+def _validate_key(key: str, base_path: Path) -> Path:
+    """Validate and resolve a blob key to a safe filesystem path."""
+    if not key or not key.strip():
+        raise InvalidKeyError("Blob key must not be empty")
+
+    if ".." in key:
+        raise InvalidKeyError("Blob key must not contain '..'")
+
+    if key.startswith("/"):
+        raise InvalidKeyError("Blob key must not start with '/'")
+
+    if not _VALID_KEY_PATTERN.match(key):
+        raise InvalidKeyError(
+            "Blob key contains invalid characters. Allowed: a-z, A-Z, 0-9, /, _, ., -"
+        )
+
+    resolved = (base_path / key).resolve()
+    if not str(resolved).startswith(str(base_path)):
+        raise InvalidKeyError("Blob key resolves outside storage directory")
+
+    return resolved
 
 
 class FilesystemBlob(BlobProvider):
-    """Filesystem implementation of BlobProvider.
-
-    TODO: Implement in Phase 4.
-    """
+    """Filesystem implementation of BlobProvider."""
 
     DEFAULT_MAX_SIZE_BYTES = 100 * 1024 * 1024  # 100MB
 
@@ -40,19 +56,55 @@ class FilesystemBlob(BlobProvider):
         self.max_size_bytes = max_size_bytes
 
     async def initialize(self) -> None:
-        raise NotImplementedError("Phase 4: create base dir with 0o700")
+        """Create base directory with restrictive permissions."""
+        await asyncio.to_thread(self.base_path.mkdir, parents=True, exist_ok=True)
+        await asyncio.to_thread(os.chmod, self.base_path, 0o700)
 
     async def write(self, key: str, data: bytes) -> str:
-        raise NotImplementedError("Phase 4: sanitize key, write with 0o600")
+        """Write bytes to disk under the given key."""
+        if len(data) > self.max_size_bytes:
+            raise BlobTooLargeError(
+                f"Blob size {len(data)} exceeds limit {self.max_size_bytes}"
+            )
+
+        path = _validate_key(key, self.base_path)
+        await asyncio.to_thread(path.parent.mkdir, parents=True, exist_ok=True)
+        await asyncio.to_thread(path.write_bytes, data)
+        await asyncio.to_thread(os.chmod, path, 0o600)
+        return key
 
     async def read(self, key: str) -> bytes:
-        raise NotImplementedError("Phase 4")
+        """Read bytes from disk."""
+        path = _validate_key(key, self.base_path)
+        if not await asyncio.to_thread(path.exists):
+            raise BlobNotFoundError(f"Blob not found: {key}")
+        return await asyncio.to_thread(path.read_bytes)
 
     async def get_local_path(self, key: str) -> Path:
-        raise NotImplementedError("Phase 4")
+        """Return the local filesystem path for a blob."""
+        path = _validate_key(key, self.base_path)
+        if not await asyncio.to_thread(path.exists):
+            raise BlobNotFoundError(f"Blob not found: {key}")
+        return path
 
     async def delete(self, key: str) -> None:
-        raise NotImplementedError("Phase 4")
+        """Delete a blob. No-op if it doesn't exist."""
+        path = _validate_key(key, self.base_path)
+        if await asyncio.to_thread(path.exists):
+            await asyncio.to_thread(path.unlink)
 
     async def delete_older_than(self, days: int) -> int:
-        raise NotImplementedError("Phase 4")
+        """Delete all blobs older than N days. Returns count deleted."""
+        cutoff = time.time() - (days * 86400)
+        deleted = 0
+
+        def _walk_and_delete() -> int:
+            count = 0
+            for file_path in self.base_path.rglob("*"):
+                if file_path.is_file() and file_path.stat().st_mtime < cutoff:
+                    file_path.unlink()
+                    count += 1
+            return count
+
+        deleted = await asyncio.to_thread(_walk_and_delete)
+        return deleted
