@@ -3,7 +3,7 @@ name = "remi"
 version = "0.1.0"
 description = "REMI — Relationship Memory Intelligence. Open-source personal relationship intelligence tool."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 license = { text = "TBD" }
 authors = [
     { name = "Tyler" },
@@ -61,7 +61,7 @@ include = ["core*", "adapters*", "api*", "config*"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py312"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
@@ -83,7 +83,7 @@ ignore = [
 
 [tool.black]
 line-length = 88
-target-version = ["py312"]
+target-version = ["py311"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -91,7 +91,7 @@ asyncio_mode = "auto"
 addopts = "-v --cov=core --cov=adapters --cov=api --cov-report=term-missing"
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
