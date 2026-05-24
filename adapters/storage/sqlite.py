@@ -13,6 +13,7 @@ import aiosqlite
 from adapters.storage.base import AlreadyExistsError, NotFoundError, StorageProvider
 from core.models import (
     AuditLogEntry,
+    Brief,
     Fact,
     FactCategory,
     Interaction,
@@ -69,6 +70,15 @@ CREATE TABLE IF NOT EXISTS open_loops (
     FOREIGN KEY (person_id) REFERENCES people(person_id)
 );
 CREATE INDEX IF NOT EXISTS idx_loops_status_due ON open_loops(status, due_date);
+
+CREATE TABLE IF NOT EXISTS briefs (
+    person_id TEXT NOT NULL,
+    brief_id TEXT NOT NULL,
+    brief_text TEXT NOT NULL,
+    generated_at TEXT NOT NULL,
+    PRIMARY KEY (person_id, brief_id),
+    FOREIGN KEY (person_id) REFERENCES people(person_id)
+);
 
 CREATE TABLE IF NOT EXISTS audit_log (
     audit_id TEXT PRIMARY KEY,
@@ -435,6 +445,45 @@ class SQLiteStorage(StorageProvider):
             )
         await db.commit()
         return loop
+
+    # ----- Briefs -----
+
+    async def create_brief(self, brief: Brief) -> Brief:
+        db = await self._get_db()
+        await db.execute(
+            """INSERT INTO briefs
+               (person_id, brief_id, brief_text, generated_at)
+               VALUES (?, ?, ?, ?)""",
+            (
+                brief.person_id,
+                brief.brief_id,
+                brief.brief_text,
+                brief.generated_at,
+            ),
+        )
+        await db.commit()
+        return brief
+
+    async def list_briefs_for_person(
+        self, person_id: str, limit: int = 20
+    ) -> list[Brief]:
+        db = await self._get_db()
+        async with db.execute(
+            """SELECT * FROM briefs
+               WHERE person_id = ?
+               ORDER BY brief_id DESC
+               LIMIT ?""",
+            (person_id, limit),
+        ) as cursor:
+            return [
+                Brief(
+                    person_id=row["person_id"],
+                    brief_id=row["brief_id"],
+                    brief_text=row["brief_text"],
+                    generated_at=row["generated_at"],
+                )
+                async for row in cursor
+            ]
 
     # ----- Audit Log -----
 

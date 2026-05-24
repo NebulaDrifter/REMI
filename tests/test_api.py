@@ -249,14 +249,24 @@ class TestLoops:
 class TestBriefs:
     async def test_generate_brief(self, client):
         jerry = await _create_jerry(client)
-        resp = await client.get(f"/people/{jerry['person_id']}/brief")
+        resp = await client.post(f"/people/{jerry['person_id']}/brief")
         assert resp.status_code == 200
         data = resp.json()
         assert data["person_name"] == "Jerry Brown"
         assert "Jerry" in data["brief"]
+        assert "brief_id" in data
+        assert "generated_at" in data
+
+    async def test_brief_history(self, client):
+        jerry = await _create_jerry(client)
+        await client.post(f"/people/{jerry['person_id']}/brief")
+        await client.post(f"/people/{jerry['person_id']}/brief")
+        resp = await client.get(f"/people/{jerry['person_id']}/briefs")
+        assert resp.status_code == 200
+        assert len(resp.json()) == 2
 
     async def test_brief_not_found(self, client):
-        resp = await client.get("/people/nonexistent/brief")
+        resp = await client.post("/people/nonexistent/brief")
         assert resp.status_code == 404
 
 

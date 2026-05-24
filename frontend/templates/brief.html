@@ -6,29 +6,82 @@
     <a href="/app/people/{{ person_id }}" class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">&larr; Back to {{ person_name }}</a>
 </div>
 
-<div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-    <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-bold">Brief: {{ person_name }}</h1>
-        <button
-            id="copy-btn"
-            class="text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-            onclick="copyBrief()"
-        >Copy</button>
-    </div>
+<div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold">Brief: {{ person_name }}</h1>
+    <button
+        id="generate-btn"
+        class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+        onclick="generateBrief()"
+    >Generate New Brief</button>
+</div>
 
-    <div id="brief-text" class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ brief }}</div>
+<div id="generate-spinner" class="hidden text-gray-400 dark:text-gray-500 text-sm mb-4">Generating...</div>
+
+<div id="briefs-list" class="space-y-4">
+    {% for b in briefs %}
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{ b.generated_at[:19] }}</span>
+            <button
+                class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                onclick="copyText(this)"
+            >Copy</button>
+        </div>
+        <div class="brief-text prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{{ b.brief_text }}</div>
+    </div>
+    {% endfor %}
+    {% if not briefs %}
+    <p id="no-briefs" class="text-gray-500 dark:text-gray-400 text-sm text-center py-8">No briefs generated yet. Click "Generate New Brief" to create one.</p>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function copyBrief() {
-    var text = document.getElementById('brief-text').textContent;
+function generateBrief() {
+    var btn = document.getElementById('generate-btn');
+    var spinner = document.getElementById('generate-spinner');
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    spinner.classList.remove('hidden');
+
+    fetch('/people/{{ person_id }}/brief', { method: 'POST' })
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+            var noBriefs = document.getElementById('no-briefs');
+            if (noBriefs) noBriefs.remove();
+
+            var list = document.getElementById('briefs-list');
+            var card = document.createElement('div');
+            card.className = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4';
+            card.innerHTML =
+                '<div class="flex items-center justify-between mb-2">' +
+                '<span class="text-xs text-gray-400 dark:text-gray-500">' + data.generated_at.substring(0, 19) + '</span>' +
+                '<button class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600" onclick="copyText(this)">Copy</button>' +
+                '</div>' +
+                '<div class="brief-text prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">' + escapeHtml(data.brief) + '</div>';
+            list.insertBefore(card, list.firstChild);
+        })
+        .catch(function(err) { alert('Error: ' + err.message); })
+        .finally(function() {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+            spinner.classList.add('hidden');
+        });
+}
+
+function copyText(btn) {
+    var text = btn.closest('.rounded-lg').querySelector('.brief-text').textContent;
     navigator.clipboard.writeText(text).then(function() {
-        var btn = document.getElementById('copy-btn');
         btn.textContent = 'Copied!';
         setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
     });
+}
+
+function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 </script>
 {% endblock %}

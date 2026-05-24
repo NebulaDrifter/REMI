@@ -13,12 +13,12 @@ from abc import ABC, abstractmethod
 
 from core.models import (
     AuditLogEntry,
+    Brief,
     Interaction,
     LoopStatus,
     OpenLoop,
     Person,
 )
-
 
 # ============================================================================
 # Exceptions
@@ -89,9 +89,7 @@ class StorageProvider(ABC):
         ...
 
     @abstractmethod
-    async def list_people(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[Person]:
+    async def list_people(self, limit: int = 100, offset: int = 0) -> list[Person]:
         """List all people. For the People List screen."""
         ...
 
@@ -144,16 +142,12 @@ class StorageProvider(ABC):
         ...
 
     @abstractmethod
-    async def get_open_loop(
-        self, person_id: str, loop_id: str
-    ) -> OpenLoop | None:
+    async def get_open_loop(self, person_id: str, loop_id: str) -> OpenLoop | None:
         """Fetch a specific open loop. Returns None if not found."""
         ...
 
     @abstractmethod
-    async def list_open_loops_for_person(
-        self, person_id: str
-    ) -> list[OpenLoop]:
+    async def list_open_loops_for_person(self, person_id: str) -> list[OpenLoop]:
         """List all open loops for a person (any status)."""
         ...
 
@@ -184,6 +178,20 @@ class StorageProvider(ABC):
         Raises:
             NotFoundError: If loop doesn't exist.
         """
+        ...
+
+    # ----- Briefs -----
+
+    @abstractmethod
+    async def create_brief(self, brief: Brief) -> Brief:
+        """Store a generated brief."""
+        ...
+
+    @abstractmethod
+    async def list_briefs_for_person(
+        self, person_id: str, limit: int = 20
+    ) -> list[Brief]:
+        """List stored briefs for a person, newest first."""
         ...
 
     # ----- Audit Log -----

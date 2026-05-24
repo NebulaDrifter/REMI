@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from adapters.ai.base import AIProvider, AIProviderError
 from adapters.storage.base import StorageProvider
 from api.dependencies import get_ai, get_storage
-from core.models import Person
+from core.models import AuditLogEntry, Brief, Person
 from core.prompts.retrieval import RETRIEVAL_SYSTEM_PROMPT, build_retrieval_prompt
 
 router = APIRouter(tags=["briefs"])
@@ -51,13 +51,13 @@ def _build_person_summary(
     return "\n".join(parts)
 
 
-@router.get("/people/{person_id}/brief")
+@router.post("/people/{person_id}/brief")
 async def generate_brief(
     person_id: str,
     storage: StorageProvider = Depends(get_storage),
     ai: AIProvider = Depends(get_ai),
 ) -> dict:
-    """Generate a pre-meeting brief for a person."""
+    """Generate a pre-meeting brief and store it."""
     person = await storage.get_person(person_id)
     if not person:
         raise HTTPException(status_code=404, detail="Person not found")
@@ -69,15 +69,38 @@ async def generate_brief(
     user_prompt = build_retrieval_prompt(summary)
 
     try:
-        brief = await ai.generate_text(
+        brief_text = await ai.generate_text(
             system_prompt=RETRIEVAL_SYSTEM_PROMPT,
             user_input=user_prompt,
         )
     except AIProviderError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
 
+    brief = Brief(person_id=person_id, brief_text=brief_text)
+    await storage.create_brief(brief)
+
+    await storage.write_audit_entry(
+        AuditLogEntry(
+            actor="single_user_mode",
+            action="generate_brief",
+            resource_id=brief.brief_id,
+            source="api",
+        )
+    )
+
     return {
         "person_id": person_id,
         "person_name": person.name,
-        "brief": brief,
+        "brief": brief_text,
+        "brief_id": brief.brief_id,
+        "generated_at": brief.generated_at,
     }
+
+
+@router.get("/people/{person_id}/briefs")
+async def list_briefs(
+    person_id: str,
+    storage: StorageProvider = Depends(get_storage),
+) -> list[Brief]:
+    """List previously generated briefs for a person."""
+    return await storage.list_briefs_for_person(person_id)

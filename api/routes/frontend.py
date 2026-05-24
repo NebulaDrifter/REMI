@@ -6,10 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from adapters.ai.base import AIProvider, AIProviderError
 from adapters.storage.base import StorageProvider
-from api.dependencies import get_ai, get_storage
-from core.prompts.retrieval import RETRIEVAL_SYSTEM_PROMPT, build_retrieval_prompt
+from api.dependencies import get_storage
 
 TEMPLATES_DIR = Path(__file__).parent.parent.parent / "frontend" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -83,27 +81,13 @@ async def brief_page(
     request: Request,
     person_id: str,
     storage: StorageProvider = Depends(get_storage),
-    ai: AIProvider = Depends(get_ai),
 ):
-    """Brief generation screen."""
-    from api.routes.briefs import _build_person_summary
-
+    """Brief screen — shows history and generate button."""
     person = await storage.get_person(person_id)
     if not person:
         raise HTTPException(status_code=404, detail="Person not found")
 
-    interactions = await storage.list_interactions_for_person(person_id)
-    loops = await storage.list_open_loops_for_person(person_id)
-    summary = _build_person_summary(person, interactions, loops)
-    user_prompt = build_retrieval_prompt(summary)
-
-    try:
-        brief = await ai.generate_text(
-            system_prompt=RETRIEVAL_SYSTEM_PROMPT,
-            user_input=user_prompt,
-        )
-    except AIProviderError as e:
-        brief = f"Error generating brief: {e}"
+    briefs = await storage.list_briefs_for_person(person_id)
 
     return templates.TemplateResponse(
         request,
@@ -112,7 +96,7 @@ async def brief_page(
             "active": "people",
             "person_id": person_id,
             "person_name": person.name,
-            "brief": brief,
+            "briefs": briefs,
         },
     )
 

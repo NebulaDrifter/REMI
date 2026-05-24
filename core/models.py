@@ -7,12 +7,11 @@ these models — no raw dicts allowed in business logic.
 See DATA_MODEL.md for full schema documentation including the Jerry walkthrough.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
 from ulid import ULID
-
 
 # ============================================================================
 # Enums
@@ -73,7 +72,7 @@ class LoopStatus(str, Enum):
 
 def _now() -> str:
     """Current UTC time as ISO8601 string."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _ulid() -> str:
@@ -143,6 +142,15 @@ class OpenLoop(BaseModel):
     created_at: str = Field(default_factory=_now)
     updated_at: str = Field(default_factory=_now)
     closed_at: str | None = None
+
+
+class Brief(BaseModel):
+    """A generated pre-meeting brief, stored for history."""
+
+    person_id: str
+    brief_id: str = Field(default_factory=_ulid)
+    brief_text: str
+    generated_at: str = Field(default_factory=_now)
 
 
 class AuditLogEntry(BaseModel):

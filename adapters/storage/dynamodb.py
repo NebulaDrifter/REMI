@@ -76,3 +76,9 @@ class DynamoDBStorage(StorageProvider):
 
     async def list_audit_entries(self, actor=None, action=None, limit=100):  # type: ignore[override]
         raise NotImplementedError("v1.1")
+
+    async def create_brief(self, brief):  # type: ignore[override]
+        raise NotImplementedError("v1.1")
+
+    async def list_briefs_for_person(self, person_id, limit=20):  # type: ignore[override]
+        raise NotImplementedError("v1.1")

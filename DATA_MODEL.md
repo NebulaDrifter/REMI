@@ -275,6 +275,15 @@ CREATE TABLE open_loops (
 );
 CREATE INDEX idx_loops_status_due ON open_loops(status, due_date);
 
+CREATE TABLE briefs (
+    person_id TEXT NOT NULL,
+    brief_id TEXT NOT NULL,
+    brief_text TEXT NOT NULL,
+    generated_at TEXT NOT NULL,
+    PRIMARY KEY (person_id, brief_id),
+    FOREIGN KEY (person_id) REFERENCES people(person_id)
+);
+
 CREATE TABLE audit_log (
     audit_id TEXT PRIMARY KEY,
     actor TEXT NOT NULL,
