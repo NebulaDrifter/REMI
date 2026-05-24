@@ -33,7 +33,7 @@ class TestSettingsDefaults:
 
     def test_cors_origins_parsing(self, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         monkeypatch.setenv(
             "REMI_CORS_ORIGINS", "http://localhost:8000, http://127.0.0.1:8000"
         )
@@ -47,7 +47,7 @@ class TestSettingsValidation:
 
     def test_missing_anthropic_key_fails(self, monkeypatch):
         monkeypatch.setenv("AI_PROVIDER", "anthropic")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         with pytest.raises(ValidationError, match="ANTHROPIC_API_KEY"):
             Settings()
@@ -61,28 +61,28 @@ class TestSettingsValidation:
 
     def test_invalid_log_level_fails(self, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         monkeypatch.setenv("REMI_LOG_LEVEL", "VERBOSE")
         with pytest.raises(ValidationError, match="Log level"):
             Settings()
 
     def test_invalid_storage_backend_fails(self, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         monkeypatch.setenv("STORAGE_BACKEND", "postgres")
         with pytest.raises(ValidationError):
             Settings()
 
     def test_invalid_ai_provider_fails(self, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         monkeypatch.setenv("AI_PROVIDER", "gemini")
         with pytest.raises(ValidationError):
             Settings()
 
     def test_ollama_doesnt_require_api_key(self, monkeypatch):
         monkeypatch.setenv("AI_PROVIDER", "ollama")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         s = Settings()
         assert s.ai_provider == AIProviderType.OLLAMA
@@ -93,7 +93,7 @@ class TestBindWarning:
 
     def test_bind_all_warns(self, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         monkeypatch.setenv("REMI_HOST", "0.0.0.0")
         with pytest.warns(UserWarning, match="0.0.0.0"):
             Settings()
@@ -104,7 +104,7 @@ class TestFactoryStubs:
 
     def _settings(self, monkeypatch, **overrides):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         for k, v in overrides.items():
             monkeypatch.setenv(k.upper(), v)
         return Settings()
@@ -145,7 +145,7 @@ class TestFactorySQLite:
 
     def test_build_sqlite_storage(self, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-        monkeypatch.setenv("WHISPER_API_KEY", "k")
+
         monkeypatch.setenv("STORAGE_BACKEND", "sqlite")
         s = Settings()
         storage = build_storage(s)

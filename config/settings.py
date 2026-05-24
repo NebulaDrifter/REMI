@@ -48,6 +48,7 @@ class TranscriptionProviderType(StrEnum):
 
     WHISPER_API = "whisper_api"
     WHISPER_LOCAL = "whisper_local"
+    NONE = "none"
 
 
 # ============================================================================
@@ -111,9 +112,7 @@ class Settings(BaseSettings):
     custom_ai_model: str | None = None
 
     # --- Transcription ---
-    transcription_provider: TranscriptionProviderType = (
-        TranscriptionProviderType.WHISPER_API
-    )
+    transcription_provider: TranscriptionProviderType = TranscriptionProviderType.NONE
     whisper_api_key: str | None = None
     whisper_model: str = "whisper-1"
 
@@ -168,7 +167,8 @@ class Settings(BaseSettings):
             if not self.whisper_api_key:
                 raise ValueError(
                     "WHISPER_API_KEY is required when "
-                    "TRANSCRIPTION_PROVIDER=whisper_api"
+                    "TRANSCRIPTION_PROVIDER=whisper_api. "
+                    "Set TRANSCRIPTION_PROVIDER=none to disable audio."
                 )
 
         return self
@@ -270,6 +270,11 @@ def build_transcription(settings: Settings) -> TranscriptionProvider:
 
     if provider in _V1_STUBS["transcription"]:
         raise _stub_error("transcription", provider.value)
+
+    if provider == TranscriptionProviderType.NONE:
+        from adapters.transcription.none import NoneTranscription
+
+        return NoneTranscription()
 
     if provider == TranscriptionProviderType.WHISPER_API:
         from adapters.transcription.whisper_api import WhisperAPI
