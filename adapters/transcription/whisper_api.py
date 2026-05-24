@@ -1,45 +1,92 @@
 """OpenAI Whisper API transcription adapter.
 
 Implements TranscriptionProvider using OpenAI's Whisper API.
-
-Implementation: Phase 6 of BUILD_PLAN.md.
 """
 
-# TODO (Phase 6): Implement WhisperAPITranscription(TranscriptionProvider).
-#
-# Implementation notes:
-# - Use the official `openai` SDK (AsyncOpenAI client)
-# - Upload audio via audio.transcriptions.create
-# - Default model: whisper-1
-# - Whisper's hard limit is 25MB; reject larger files with AudioTooLargeError
-# - Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm
-# - Map openai.AuthenticationError → TranscriptionAuthError
-# - Handle transient errors with one retry
-
+import asyncio
+import logging
 from pathlib import Path
 
-from adapters.transcription.base import TranscriptionProvider
+import openai
+
+from adapters.transcription.base import (
+    AudioTooLargeError,
+    TranscriptionAuthError,
+    TranscriptionError,
+    TranscriptionProvider,
+    UnsupportedFormatError,
+)
+
+logger = logging.getLogger(__name__)
+
+SUPPORTED_FORMATS = {".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".wav", ".webm"}
+MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024  # 25MB per Whisper API limit
 
 
-class WhisperAPITranscription(TranscriptionProvider):
-    """OpenAI Whisper API implementation.
+class WhisperAPI(TranscriptionProvider):
+    """OpenAI Whisper API implementation of TranscriptionProvider."""
 
-    TODO: Implement in Phase 6.
-    """
-
-    MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024  # 25MB per Whisper API limit
-
-    def __init__(self, api_key: str, model: str = "whisper-1") -> None:
-        self.api_key = api_key
+    def __init__(self, api_key: str | None, model: str = "whisper-1") -> None:
+        if not api_key:
+            raise TranscriptionAuthError("Whisper API key is required")
         self.model = model
-        # TODO: Initialize AsyncOpenAI client
+        self._client = openai.AsyncOpenAI(api_key=api_key)
 
     async def transcribe(
         self,
         audio_path: Path,
         language: str | None = None,
     ) -> str:
-        raise NotImplementedError("Phase 6: implement Whisper API transcription")
+        """Transcribe an audio file using the Whisper API."""
+        if not audio_path.exists():
+            raise TranscriptionError(f"Audio file not found: {audio_path}")
+
+        suffix = audio_path.suffix.lower()
+        if suffix not in SUPPORTED_FORMATS:
+            raise UnsupportedFormatError(
+                f"Format '{suffix}' not supported. "
+                f"Supported: {', '.join(sorted(SUPPORTED_FORMATS))}"
+            )
+
+        file_size = audio_path.stat().st_size
+        if file_size > MAX_FILE_SIZE_BYTES:
+            raise AudioTooLargeError(
+                f"File size {file_size} bytes exceeds "
+                f"Whisper limit of {MAX_FILE_SIZE_BYTES} bytes (25MB)"
+            )
+
+        try:
+            with open(audio_path, "rb") as audio_file:
+                kwargs: dict = {
+                    "model": self.model,
+                    "file": audio_file,
+                }
+                if language:
+                    kwargs["language"] = language
+
+                transcript = await self._client.audio.transcriptions.create(**kwargs)
+        except openai.AuthenticationError as e:
+            raise TranscriptionAuthError(f"Whisper API auth failed: {e}") from e
+        except openai.RateLimitError:
+            logger.warning("Whisper rate limit hit, retrying after 2s")
+            await asyncio.sleep(2)
+            try:
+                with open(audio_path, "rb") as audio_file:
+                    kwargs = {"model": self.model, "file": audio_file}
+                    if language:
+                        kwargs["language"] = language
+                    transcript = await self._client.audio.transcriptions.create(
+                        **kwargs
+                    )
+            except openai.RateLimitError as e:
+                raise TranscriptionError(
+                    "Whisper rate limit exceeded after retry"
+                ) from e
+        except openai.APIError as e:
+            raise TranscriptionError(f"Whisper API error: {e}") from e
+
+        return transcript.text
 
     def provider_name(self) -> str:
+        """Return provider identifier."""
         return "whisper_api"
