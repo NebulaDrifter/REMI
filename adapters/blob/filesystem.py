@@ -58,7 +58,10 @@ class FilesystemBlob(BlobProvider):
     async def initialize(self) -> None:
         """Create base directory with restrictive permissions."""
         await asyncio.to_thread(self.base_path.mkdir, parents=True, exist_ok=True)
-        await asyncio.to_thread(os.chmod, self.base_path, 0o700)
+        try:
+            await asyncio.to_thread(os.chmod, self.base_path, 0o700)
+        except PermissionError:
+            pass
 
     async def write(self, key: str, data: bytes) -> str:
         """Write bytes to disk under the given key."""
@@ -70,7 +73,10 @@ class FilesystemBlob(BlobProvider):
         path = _validate_key(key, self.base_path)
         await asyncio.to_thread(path.parent.mkdir, parents=True, exist_ok=True)
         await asyncio.to_thread(path.write_bytes, data)
-        await asyncio.to_thread(os.chmod, path, 0o600)
+        try:
+            await asyncio.to_thread(os.chmod, path, 0o600)
+        except PermissionError:
+            pass
         return key
 
     async def read(self, key: str) -> bytes:
