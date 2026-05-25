@@ -566,10 +566,16 @@ class SQLiteStorage(StorageProvider):
 
         crosses_year = end_mmdd < today_mmdd
 
+        # For annual reminders, normalize date to MM-DD via SUBSTR.
+        # Handles both "MM-DD" (len 5) and "YYYY-MM-DD" (len 10) formats.
+        mmdd_expr = (
+            "CASE WHEN LENGTH(r.date) > 5" " THEN SUBSTR(r.date, 6, 5) ELSE r.date END"
+        )
+
         if crosses_year:
-            annual_clause = "(r.date >= ? OR r.date <= ?)"
+            annual_clause = f"({mmdd_expr} >= ? OR {mmdd_expr} <= ?)"
         else:
-            annual_clause = "(r.date >= ? AND r.date <= ?)"
+            annual_clause = f"({mmdd_expr} >= ? AND {mmdd_expr} <= ?)"
 
         query = f"""
             SELECT r.*, p.name as person_name FROM reminders r

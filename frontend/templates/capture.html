@@ -39,9 +39,9 @@
     </form>
 </div>
 
-{% if upcoming_reminders %}
 <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm mt-5">
     <h2 class="text-lg font-semibold mb-3">Coming Up</h2>
+    {% if upcoming_reminders %}
     <div class="space-y-1" id="upcoming-list">
         {% for item in upcoming_reminders %}
         <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
@@ -67,8 +67,10 @@
         </div>
         {% endfor %}
     </div>
+    {% else %}
+    <p class="text-sm text-gray-400 dark:text-gray-500">No upcoming reminders. Birthdays and important dates will appear here.</p>
+    {% endif %}
 </div>
-{% endif %}
 
 <div id="extraction-result" class="mt-5 hidden">
     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm space-y-4">
