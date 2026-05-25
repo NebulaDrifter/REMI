@@ -61,6 +61,30 @@ async def _enrich_people(people: list[Person], storage: StorageProvider) -> list
     return result
 
 
+def _relative_date_label(date_str: str) -> str:
+    """Convert a date string to a relative label like 'Today' or 'In 3 days'."""
+    from datetime import UTC, datetime
+
+    today = datetime.now(UTC).date()
+
+    if len(date_str) == 5:
+        month, day = int(date_str[:2]), int(date_str[3:5])
+        target = today.replace(month=month, day=day)
+        if target < today:
+            target = target.replace(year=today.year + 1)
+    else:
+        target = datetime.fromisoformat(date_str).date()
+
+    diff = (target - today).days
+    if diff < 0:
+        return "Overdue"
+    if diff == 0:
+        return "Today"
+    if diff == 1:
+        return "Tomorrow"
+    return f"In {diff} days"
+
+
 @router.get("/", response_class=HTMLResponse)
 async def capture_page(
     request: Request,
@@ -68,10 +92,17 @@ async def capture_page(
 ):
     """Capture screen — primary daily-use page with upcoming reminders."""
     upcoming = await storage.list_upcoming_reminders(days=7)
+    enriched = [
+        {
+            "item": item,
+            "label": _relative_date_label(item.reminder.date),
+        }
+        for item in upcoming
+    ]
     return templates.TemplateResponse(
         request,
         "capture.html",
-        {"active": "capture", "upcoming_reminders": upcoming},
+        {"active": "capture", "upcoming_reminders": enriched},
     )
 
 

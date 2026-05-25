@@ -92,18 +92,22 @@
     <h2 class="text-lg font-semibold mb-2">Reminders <span class="text-sm font-normal text-gray-400 dark:text-gray-500">({{ reminders|length }})</span></h2>
     <div class="space-y-2">
         {% for rem in reminders %}
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
-            <div class="flex items-center gap-2">
-                {% if rem.recurrence == 'annual' %}
-                <span class="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">Annual</span>
-                {% else %}
-                <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">Once</span>
-                {% endif %}
-                <p class="text-sm">{{ rem.title }}</p>
-                <span class="text-xs text-gray-400 dark:text-gray-500">{{ rem.date }}</span>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 flex items-center gap-4 shadow-sm">
+            <div class="flex-shrink-0 text-center w-14">
+                <span class="block text-sm font-bold text-gray-700 dark:text-gray-200">{{ rem.date }}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    {% if rem.recurrence == 'annual' %}
+                    <span class="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-medium">Annual</span>
+                    {% else %}
+                    <span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded font-medium">Once</span>
+                    {% endif %}
+                    <p class="text-sm font-medium truncate">{{ rem.title }}</p>
+                </div>
             </div>
             <button
-                class="text-xs bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2.5 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
+                class="text-xs bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2.5 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 flex-shrink-0"
                 hx-patch="/api/reminders/{{ person.person_id }}/{{ rem.reminder_id }}/dismiss"
                 hx-target="closest div.rounded-xl"
                 hx-swap="outerHTML"
