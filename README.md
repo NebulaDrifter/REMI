@@ -26,6 +26,33 @@ You log interactions with people through a chat-like interface — typed notes o
 
 Both targets share the same FastAPI application code. Hexagonal architecture means adapters are swappable.
 
+## Architecture
+
+Core logic depends only on abstract **ports**. Concrete **adapters** plug in underneath — the only place a vendor SDK lives. Swap SQLite → DynamoDB or Anthropic → Ollama by changing config, never core.
+
+```mermaid
+flowchart TD
+    BROWSER["🖥️ Browser — HTMX + Tailwind + Jinja2"]
+    API["⚙️ API Layer — FastAPI (api/main.py)"]
+    CORE["🧠 Core (core/) — no provider SDKs, ever"]
+    CFG["config/settings.py — reads env, injects adapters"]
+
+    BROWSER -->|HTTP| API --> CORE
+    CFG -.injects.-> API
+
+    CORE --> SP[Port: StorageProvider]
+    CORE --> AP[Port: AIProvider]
+    CORE --> BP[Port: BlobProvider]
+    CORE --> TP[Port: TranscriptionProvider]
+
+    SP --> SQLite([SQLite ●]) & Dynamo([DynamoDB ○])
+    AP --> Anthropic([Anthropic ●]) & Ollama([Ollama ● + Manager]) & AIStub([OpenAI/Bedrock/Custom ○])
+    BP --> FS([Filesystem ●]) & S3([S3 ○])
+    TP --> Whisper([Whisper API ●]) & NoneT([None ●]) & WLocal([Whisper-local ○])
+```
+
+**● live in v1.0 · ○ stubbed for v1.1.** Full data-flow and deployment diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
 ## Quick Start (Local)
 
 ```bash
@@ -47,6 +74,7 @@ open http://localhost:8000
 
 | File | Purpose |
 |---|---|
+| `docs/ARCHITECTURE.md` | System, data-flow, and deployment diagrams |
 | `DECISIONS.md` | The 10 locked architectural decisions and rationale |
 | `SECURITY.md` | Threat model, security controls per deployment |
 | `DATA_MODEL.md` | Three tables, fields, query patterns, concrete examples |
