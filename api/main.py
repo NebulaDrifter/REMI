@@ -12,8 +12,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from api.routes import briefs, frontend, interactions, loops, people, reminders
+from api.routes import (
+    briefs,
+    frontend,
+    interactions,
+    loops,
+    models,
+    people,
+    reminders,
+)
+from api.routes.models import ACTIVE_MODEL_KEY
 from config.settings import (
+    AIProviderType,
     Settings,
     build_ai,
     build_blob,
@@ -43,6 +53,20 @@ async def lifespan(application: FastAPI):
     await blob.initialize()
     application.state.blob = blob
 
+    # For local models, restore the last hot-swapped model from app_config so
+    # the choice survives restarts. Static config still comes from .env.
+    application.state.ollama_manager = None
+    application.state.pull_jobs = {}
+    if settings.ai_provider == AIProviderType.OLLAMA:
+        from adapters.ai.ollama_manager import OllamaManager
+
+        stored_model = await storage.get_app_config(ACTIVE_MODEL_KEY)
+        if stored_model:
+            settings.ollama_model = stored_model
+        application.state.ollama_manager = OllamaManager(
+            base_url=settings.ollama_base_url
+        )
+
     application.state.ai = build_ai(settings)
     application.state.transcription = build_transcription(settings)
     application.state.settings = settings
@@ -56,6 +80,8 @@ async def lifespan(application: FastAPI):
 
     yield
 
+    if application.state.ollama_manager is not None:
+        await application.state.ollama_manager.aclose()
     await storage.close()
     logger.info("REMI shut down")
 
@@ -91,6 +117,7 @@ app.include_router(interactions.router)
 app.include_router(loops.router)
 app.include_router(briefs.router)
 app.include_router(reminders.router)
+app.include_router(models.router)
 app.include_router(frontend.router)
 
 STATIC_DIR = Path(__file__).parent.parent / "frontend" / "static"

@@ -131,3 +131,7 @@ class OllamaAI(AIProvider):
     def provider_name(self) -> str:
         """Return provider identifier."""
         return "ollama"
+
+    async def aclose(self) -> None:
+        """Close the underlying HTTP client. Used when hot-swapping models."""
+        await self._client.aclose()

@@ -49,6 +49,8 @@ These decisions were made deliberately and after weighing tradeoffs. They are th
 
 **Implication:** All prompts in `core/prompts/` are provider-agnostic. No Anthropic-tuned formatting, no OpenAI-specific JSON modes. The adapter handles provider-specific details.
 
+**Local model management (added v0.3.0):** When `AI_PROVIDER=ollama`, models can be pulled, deleted, and hot-swapped from the UI. This is Ollama-specific operational tooling — it lives in `adapters/ai/ollama_manager.py`, **not** in the provider-agnostic `AIProvider` interface (hosted providers have no model lifecycle to manage). The active model is the one piece of config that changes at runtime; it persists in the non-secret `app_config` store, not `.env`. Static config still flows from `.env` via `config/settings.py`. Hosted-provider API keys entered via the UI are a **separate, planned phase** with an encrypted key store — not covered by this note.
+
 ## 6. Three-Table Data Model: People, Interactions, OpenLoops
 
 **Decision:** Relational structure across three tables. Person is identity. Interaction is an event (facts extracted, tagged, dated). OpenLoop is a commitment.

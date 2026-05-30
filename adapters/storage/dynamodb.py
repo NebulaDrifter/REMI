@@ -83,6 +83,12 @@ class DynamoDBStorage(StorageProvider):
     async def list_briefs_for_person(self, person_id, limit=20):  # type: ignore[override]
         raise NotImplementedError("v1.1")
 
+    async def get_app_config(self, key):  # type: ignore[override]
+        raise NotImplementedError("v1.1")
+
+    async def set_app_config(self, key, value):  # type: ignore[override]
+        raise NotImplementedError("v1.1")
+
     async def create_reminder(self, reminder):  # type: ignore[override]
         raise NotImplementedError("v1.1")
 

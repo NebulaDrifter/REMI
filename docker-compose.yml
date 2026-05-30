@@ -1,7 +1,11 @@
 # REMI Local Deployment
 #
 # Default config binds to 127.0.0.1 only. Change with care.
-# Ollama service is commented out — uncomment to run local AI.
+#
+# The ollama service runs local AI inference and is reachable ONLY on the
+# internal remi-network — it is NOT published to your host. To use it, set in
+# .env:  AI_PROVIDER=ollama  and  OLLAMA_BASE_URL=http://ollama:11434
+# Manage models from REMI's Settings screen. Models persist in ./ollama_data.
 
 services:
   remi-app:
@@ -20,6 +24,8 @@ services:
       - ./data:/app/data
       # Persist audio files across restarts
       - ./audio_storage:/app/audio_storage
+    depends_on:
+      - ollama
     restart: unless-stopped
     # Security: drop unnecessary capabilities
     cap_drop:
@@ -34,24 +40,28 @@ services:
       retries: 3
       start_period: 10s
 
-  # Uncomment to run Ollama for local AI inference.
-  # Then set AI_PROVIDER=ollama and OLLAMA_BASE_URL=http://ollama:11434 in .env
-  #
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   ports:
-  #     - "127.0.0.1:11434:11434"
-  #   volumes:
-  #     - ./ollama_data:/root/.ollama
-  #   restart: unless-stopped
-  #   # On Linux with NVIDIA GPU, uncomment:
-  #   # deploy:
-  #   #   resources:
-  #   #     reservations:
-  #   #       devices:
-  #   #         - driver: nvidia
-  #   #           count: 1
-  #   #           capabilities: [gpu]
+  # Local AI inference. Internal-only: no host port published, so it is not
+  # exposed to your network. REMI reaches it at http://ollama:11434.
+  # Manage models from the Settings screen.
+  ollama:
+    image: ollama/ollama:latest
+    # No `ports:` on purpose — internal network access only.
+    expose:
+      - "11434"
+    volumes:
+      # Downloaded models persist across restarts
+      - ./ollama_data:/root/.ollama
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    # On Linux with an NVIDIA GPU, uncomment for hardware acceleration:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
 networks:
   default:
