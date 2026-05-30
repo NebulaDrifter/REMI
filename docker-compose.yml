@@ -19,6 +19,10 @@ services:
       - .env
     environment:
       - REMI_HOST=0.0.0.0
+      # The ollama service is always at this internal address. Set here (not in
+      # .env) so it can't be misconfigured to localhost, which inside this
+      # container points at the app itself, not Ollama. Overrides .env.
+      - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
       # Persist SQLite database across restarts
       - ./data:/app/data

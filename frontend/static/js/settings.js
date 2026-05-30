@@ -129,6 +129,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function friendlyError(msg) {
+    // Ollama returns "pull model manifest: file does not exist" when the name
+    // isn't a real library model or HF GGUF repo. Translate that for the user.
+    if (/manifest|does not exist|not found|404/i.test(msg)) {
+      return (
+        "Not found. Use an Ollama library name (e.g. llama3.2:3b) or a " +
+        "Hugging Face GGUF repo (e.g. hf.co/user/repo — must contain .gguf files)."
+      );
+    }
+    return msg;
+  }
+
   var polling = null;
 
   function pollPull(name) {
@@ -140,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!resp.ok) return;
       var p = await resp.json();
       pullLabel.textContent = p.error
-        ? "Error: " + p.error
+        ? friendlyError(p.error)
         : p.status + (p.percent ? " — " + p.percent + "%" : "");
       pullBar.style.width = (p.percent || 0) + "%";
       if (p.done || p.error) {
