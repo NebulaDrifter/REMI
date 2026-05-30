@@ -136,12 +136,9 @@ REMI can pull, delete, and hot-swap local models from the Settings screen. New r
 
 ## Vulnerability Reporting
 
-Once public, the repo includes a `SECURITY.md` (this file) with:
-- Contact email for vulnerability reports
-- Expected response time (e.g., 72 hours acknowledgment)
-- Coordinated disclosure policy
+Found a security issue? **Open a GitHub issue** on the repository.
 
-Until public release: contact the maintainer directly.
+This is a self-hosted, open-source project maintained on a best-effort basis. There is no dedicated security inbox or guaranteed response time. If a vulnerability is sensitive, describe the impact without posting a working exploit.
 
 ## Supply Chain Hygiene
 
