@@ -10,7 +10,7 @@
 
 ## How to Use This Plan
 
-Each phase is a Claude Code session worth of work. Work top to bottom. The "done" criteria are the gate — if any item isn't met, stay in the phase.
+Each phase is a focused session worth of work. Work top to bottom. The "done" criteria are the gate — if any item isn't met, stay in the phase.
 
 Phases 1-3 are scaffolding. Phases 4-7 are implementation. Phase 8 is integration and polish.
 

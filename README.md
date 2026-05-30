@@ -51,8 +51,6 @@ open http://localhost:8000
 | `SECURITY.md` | Threat model, security controls per deployment |
 | `DATA_MODEL.md` | Three tables, fields, query patterns, concrete examples |
 | `BUILD_PLAN.md` | Phased build order for implementing v1.0 |
-| `CLAUDE.md` | Instructions for Claude Code when working on this project |
-| `KICKOFF.md` | The exact prompt to give Claude Code at start of a session |
 
 ## Project Status
 

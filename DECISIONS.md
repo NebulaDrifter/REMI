@@ -3,7 +3,7 @@
 > **Summary**
 > - 10 locked decisions that govern REMI's design.
 > - Each decision is non-negotiable without explicit revisit and update.
-> - When Claude Code suggests something that contradicts these, point at this file.
+> - When an AI coding assistant suggests something that contradicts these, point at this file.
 
 These decisions were made deliberately and after weighing tradeoffs. They are the North Star for the build. If a future requirement makes one of these obsolete, the decision gets updated here first, then code follows.
 

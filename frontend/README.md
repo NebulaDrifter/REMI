@@ -21,7 +21,7 @@ local deployment, by S3 + CloudFront in cloud (v1.1).
 
 ## Design Principles
 
-- **Mobile-first.** Tyler will use this on his phone. One-column layouts.
+- **Mobile-first.** Designed to be used on a phone. One-column layouts.
 - **Fast feedback on capture.** After submitting, immediately show extracted facts
   for confirmation. Don't make the user wait for a separate page.
 - **Person disambiguation inline.** When extraction says "Jerry doesn't exist —

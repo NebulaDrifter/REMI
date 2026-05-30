@@ -10,7 +10,7 @@
 
 ## Design Philosophy
 
-**Facts are temporal, not eternal.** "Loves fishing" said in March 2024 may be wrong by October 2025. The relational model preserves both facts across time, with sources and dates intact. Claude can then reason about which fact is current.
+**Facts are temporal, not eternal.** "Loves fishing" said in March 2024 may be wrong by October 2025. The relational model preserves both facts across time, with sources and dates intact. The AI can then reason about which fact is current.
 
 **Three concepts, three tables:**
 
@@ -31,7 +31,7 @@ Stable identity for each person.
 | `name_lower` | string | yes | Lowercased name for case-insensitive lookup (GSI in DynamoDB) |
 | `company` | string | no | Current employer or affiliation |
 | `relationship_type` | enum | yes | See enum below |
-| `tags` | string set | no | User/Claude-applied tags (e.g., "outdoorsy", "music-fan") |
+| `tags` | string set | no | User/AI-applied tags (e.g., "outdoorsy", "music-fan") |
 | `pronunciation` | string | no | Phonetic guide (e.g., "SHAW-na" for Siobhan) |
 | `nickname` | string | no | What they go by (e.g., "Dick" for Richard) |
 | `notes` | string | no | Freeform context the user wants persistent |
@@ -62,9 +62,9 @@ One row per conversation, meeting, message, or observation.
 | `raw_input` | string | yes | What the user typed or said |
 | `raw_transcript` | string | no | Whisper output for audio interactions |
 | `audio_s3_key` | string | no | Pointer to blob storage if audio |
-| `extracted_summary` | string | yes | One-sentence summary from Claude |
+| `extracted_summary` | string | yes | One-sentence summary from the AI |
 | `facts` | list[object] | no | Structured facts extracted (see below) |
-| `tags_added` | list[string] | no | Tags Claude proposed adding to the Person |
+| `tags_added` | list[string] | no | Tags the AI proposed adding to the Person |
 | `created_at` | string (ISO8601) | yes | When the row was written |
 
 **`interaction_type` enum:**
