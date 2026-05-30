@@ -1,10 +1,10 @@
 [project]
 name = "remi"
-version = "0.2.0"
+version = "0.3.1"
 description = "REMI — Relationship Memory Intelligence. Open-source personal relationship intelligence tool."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "TBD" }
+license = { text = "Apache-2.0" }
 authors = [
     { name = "Tyler" },
 ]

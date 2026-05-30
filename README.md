@@ -56,8 +56,8 @@ open http://localhost:8000
 
 ## Project Status
 
-This is a starter scaffold. Folder structure, abstract interfaces, and Pydantic models are in place. Implementation of adapters, routes, and frontend is in progress.
+**v1.0 (local Docker) is functional.** Working end-to-end: capture (text or voice), AI extraction, person resolution, people management, on-demand briefs with history, date-based reminders, and local model management (pull/swap Ollama models from the UI). AWS cloud deployment (v1.1) is intentionally stubbed — see `DECISIONS.md`.
 
 ## License
 
-To be determined before public release. Likely MIT or Apache 2.0.
+Licensed under the **Apache License 2.0**. See [`LICENSE`](LICENSE).
