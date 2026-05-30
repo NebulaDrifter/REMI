@@ -1,3 +1,6 @@
+# Claude session history (local only, never sync)
+.claude-history/
+
 # Secrets — NEVER COMMIT
 .env
 .env.local
