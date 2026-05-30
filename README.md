@@ -32,26 +32,36 @@ Core logic depends only on abstract **ports**. Concrete **adapters** plug in und
 
 ```mermaid
 flowchart TD
-    BROWSER["🖥️ Browser — HTMX + Tailwind + Jinja2"]
-    API["⚙️ API Layer — FastAPI (api/main.py)"]
-    CORE["🧠 Core (core/) — no provider SDKs, ever"]
-    CFG["config/settings.py — reads env, injects adapters"]
+    BROWSER["Browser: HTMX, Tailwind, Jinja2"]
+    API["API Layer: FastAPI"]
+    CORE["Core: no provider SDKs, ever"]
+    CFG["Config: reads env, injects adapters"]
 
-    BROWSER -->|HTTP| API --> CORE
-    CFG -.injects.-> API
+    BROWSER -->|HTTP| API
+    API --> CORE
+    CFG -. injects .-> API
 
-    CORE --> SP[Port: StorageProvider]
-    CORE --> AP[Port: AIProvider]
-    CORE --> BP[Port: BlobProvider]
-    CORE --> TP[Port: TranscriptionProvider]
+    CORE --> SP["Port: StorageProvider"]
+    CORE --> AP["Port: AIProvider"]
+    CORE --> BP["Port: BlobProvider"]
+    CORE --> TP["Port: TranscriptionProvider"]
 
-    SP --> SQLite([SQLite ●]) & Dynamo([DynamoDB ○])
-    AP --> Anthropic([Anthropic ●]) & Ollama([Ollama ● + Manager]) & AIStub([OpenAI/Bedrock/Custom ○])
-    BP --> FS([Filesystem ●]) & S3([S3 ○])
-    TP --> Whisper([Whisper API ●]) & NoneT([None ●]) & WLocal([Whisper-local ○])
+    SP --> SQLite["SQLite — live"]
+    SP --> Dynamo["DynamoDB — stub"]
+
+    AP --> Anthropic["Anthropic — live"]
+    AP --> Ollama["Ollama — live, plus model Manager"]
+    AP --> AIStub["OpenAI, Bedrock, Custom — stub"]
+
+    BP --> FS["Filesystem — live"]
+    BP --> S3["S3 — stub"]
+
+    TP --> Whisper["Whisper API — live"]
+    TP --> NoneT["None — live"]
+    TP --> WLocal["Whisper-local — stub"]
 ```
 
-**● live in v1.0 · ○ stubbed for v1.1.** Full data-flow and deployment diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+**live = shipping in v1.0 · stub = planned for v1.1.** Full data-flow and deployment diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Quick Start (Local)
 
