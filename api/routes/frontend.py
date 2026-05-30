@@ -239,5 +239,6 @@ async def settings_page(request: Request):
             "blob_backend": settings.blob_backend.value,
             "transcription": settings.transcription_provider.value,
             "audio_retention_days": settings.audio_retention_days,
+            "is_ollama": settings.ai_provider.value == "ollama",
         },
     )

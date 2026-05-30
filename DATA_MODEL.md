@@ -341,7 +341,23 @@ CREATE TABLE audit_log (
     timestamp TEXT NOT NULL,
     source TEXT NOT NULL
 );
+
+-- Runtime-mutable, NON-SECRET key/value config. Lets the UI change a few
+-- settings live without a restart (currently: the active local model).
+-- Static config still comes from .env. NEVER store secrets here — API keys
+-- belong in the encrypted key store (separate, planned phase).
+CREATE TABLE app_config (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 ```
+
+### app_config keys in use
+
+| Key | Meaning |
+|---|---|
+| `ollama_active_model` | The local model REMI is currently using. Set when you hot-swap a model from Settings; restored on startup. |
 
 ## DynamoDB Schema (v1.1 — Planned)
 

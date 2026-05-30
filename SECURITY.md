@@ -118,6 +118,22 @@ Every write operation logs to an audit table:
 
 **Never logged:** the actual data (names, notes, transcripts). Audit log captures *that something happened*, not what was said.
 
+Model management actions (`pull_model`, `delete_model`, `set_active_model`) are audited the same way — the model name is operational metadata, not personal data.
+
+## Local Model Management (Ollama)
+
+REMI can pull, delete, and hot-swap local models from the Settings screen. New risks and the controls for them:
+
+| Risk | Control |
+|---|---|
+| Pulling arbitrary models exhausts disk/RAM | Models persist to a dedicated volume the user can clear. Pulls are explicit, user-initiated actions — never automatic. UI warns that large models need more RAM. |
+| Untrusted model source | Pulls go through Ollama (registry or `hf.co/...` GGUF). REMI runs the model for **inference only** — no arbitrary code execution path is added. |
+| Model name injection | Names are Pydantic-validated against a strict character allowlist before reaching Ollama. |
+| Ollama exposed to the network | The Ollama container publishes **no host port**. It is reachable only on the internal Docker network from REMI. |
+| Deleting the in-use model | Blocked — the active model cannot be deleted until another is selected. |
+
+**Not a secret store.** Model selection lives in the `app_config` table, which holds only non-secret runtime config. API keys for hosted providers are out of scope here and will use a separate encrypted key store.
+
 ## Vulnerability Reporting
 
 Once public, the repo includes a `SECURITY.md` (this file) with:

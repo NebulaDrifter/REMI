@@ -242,3 +242,19 @@ class StorageProvider(ABC):
     ) -> list[AuditLogEntry]:
         """List audit entries, optionally filtered. For incident forensics."""
         ...
+
+    # ----- App config -----
+    #
+    # Runtime-mutable, NON-SECRET configuration (e.g., the active local model).
+    # Static config still lives in .env via config/settings.py. Never store
+    # secrets (API keys) here — those belong in the encrypted key store.
+
+    @abstractmethod
+    async def get_app_config(self, key: str) -> str | None:
+        """Read a runtime config value by key. Returns None if unset."""
+        ...
+
+    @abstractmethod
+    async def set_app_config(self, key: str, value: str) -> None:
+        """Write a runtime config value, overwriting any existing value."""
+        ...

@@ -108,6 +108,12 @@ CREATE TABLE IF NOT EXISTS audit_log (
     timestamp TEXT NOT NULL,
     source TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS app_config (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 """
 
 
@@ -569,7 +575,7 @@ class SQLiteStorage(StorageProvider):
         # For annual reminders, normalize date to MM-DD via SUBSTR.
         # Handles both "MM-DD" (len 5) and "YYYY-MM-DD" (len 10) formats.
         mmdd_expr = (
-            "CASE WHEN LENGTH(r.date) > 5" " THEN SUBSTR(r.date, 6, 5) ELSE r.date END"
+            "CASE WHEN LENGTH(r.date) > 5 THEN SUBSTR(r.date, 6, 5) ELSE r.date END"
         )
 
         if crosses_year:
@@ -674,3 +680,25 @@ class SQLiteStorage(StorageProvider):
 
         async with db.execute(query, params) as cursor:
             return [_row_to_audit_entry(row) async for row in cursor]
+
+    # ----- App config -----
+
+    async def get_app_config(self, key: str) -> str | None:
+        db = await self._get_db()
+        async with db.execute(
+            "SELECT value FROM app_config WHERE key = ?", (key,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["value"] if row else None
+
+    async def set_app_config(self, key: str, value: str) -> None:
+        db = await self._get_db()
+        await db.execute(
+            """INSERT INTO app_config (key, value, updated_at)
+               VALUES (?, ?, ?)
+               ON CONFLICT(key) DO UPDATE SET
+                   value = excluded.value,
+                   updated_at = excluded.updated_at""",
+            (key, value, _now()),
+        )
+        await db.commit()

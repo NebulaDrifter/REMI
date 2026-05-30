@@ -42,6 +42,54 @@
 </div>
 
 <p class="text-xs text-gray-400 dark:text-gray-500 mt-4 text-center">
-    Settings are read-only. Edit <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">.env</code> and restart to change.
+    Most settings are read-only. Edit <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">.env</code> and restart to change.
 </p>
+
+{% if is_ollama %}
+<div id="model-panel" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-6 space-y-4">
+    <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold">Local Models</h2>
+        <button id="models-refresh" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Refresh</button>
+    </div>
+
+    <p id="models-status" class="text-xs text-gray-400 dark:text-gray-500">Loading…</p>
+
+    <!-- Installed models -->
+    <div id="models-list" class="space-y-2"></div>
+
+    <!-- Pull a new model -->
+    <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+        <label class="block text-sm font-medium mb-1" for="pull-name">Install a model</label>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">
+            Use an Ollama library name (e.g. <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">llama3.2:3b</code>)
+            or a Hugging Face repo with the <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">hf.co/</code> prefix
+            (e.g. <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">hf.co/user/repo</code>).
+            A plain model name from Hugging Face won't work, and the repo must contain
+            <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">.gguf</code> files.
+            Larger models need more RAM and run slowly on CPU.
+        </p>
+        <div class="flex gap-2">
+            <input id="pull-name" type="text" placeholder="llama3.2:3b"
+                   class="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm">
+            <button id="pull-btn"
+                    class="rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium disabled:opacity-50">
+                Install
+            </button>
+        </div>
+        <div id="pull-progress" class="hidden mt-3">
+            <p id="pull-label" class="text-xs text-gray-500 dark:text-gray-400 mb-1"></p>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div id="pull-bar" class="bg-blue-600 h-2 rounded-full transition-all" style="width:0%"></div>
+            </div>
+        </div>
+        <div id="pull-suggested" class="mt-2 flex flex-wrap gap-1.5"></div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if is_ollama %}
+<script src="/static/js/settings.js"></script>
+{% endif %}
 {% endblock %}

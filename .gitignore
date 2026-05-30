@@ -65,6 +65,7 @@ dmypy.json
 *.sqlite3
 data/
 audio_storage/
+ollama_data/
 
 # IDEs
 .idea/
