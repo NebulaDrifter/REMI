@@ -32,17 +32,43 @@ All config via `.env`. See `.env.example` for the full list with comments.
 
 ## Using Ollama (Local AI)
 
-To run REMI without sending data to any external AI provider:
+Run REMI without sending data to any external AI provider. Two ways to do it.
 
-1. Uncomment the `ollama` service in `docker-compose.yml`
-2. Set in `.env`:
+### Option A — Bundled container (default)
+
+REMI ships its own Ollama container. Nothing extra to install.
+
+1. Set in `.env`:
    ```
    AI_PROVIDER=ollama
-   OLLAMA_BASE_URL=http://ollama:11434
    OLLAMA_MODEL=llama3.1:8b
    ```
-3. Restart: `docker compose up`
-4. Pull a model: `docker compose exec ollama ollama pull llama3.1:8b`
+   Leave `OLLAMA_BASE_URL` unset — Compose points it at the internal container.
+2. Start: `docker compose up`
+3. Pull a model from the Settings screen (or:
+   `docker compose exec ollama ollama pull llama3.1:8b`).
+
+Models persist in `./ollama_data`.
+
+### Option B — Your host's existing Ollama
+
+Already run Ollama on your machine with models downloaded? Connect to it
+instead of pulling a second copy.
+
+1. Set in `.env`:
+   ```
+   AI_PROVIDER=ollama
+   OLLAMA_MODEL=llama3.1:8b   # a model you already have
+   ```
+   Leave `OLLAMA_BASE_URL` unset — the override below sets it.
+2. Start with both compose files:
+   ```
+   docker compose -f docker-compose.yml -f docker-compose.host-ollama.yml up
+   ```
+
+This connects to `http://host.docker.internal:11434`, skips the bundled
+container, and reuses your existing models. Model management from the Settings
+screen then operates on your host's Ollama.
 
 Note: smaller local models may struggle with structured output reliability.
 Test the extraction flow before relying on it.

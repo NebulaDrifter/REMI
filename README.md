@@ -71,10 +71,13 @@ git clone <your-repo> remi && cd remi
 
 # 2. Copy env template, add your API keys
 cp .env.example .env
-# Edit .env: set ANTHROPIC_API_KEY or OLLAMA_BASE_URL
+# Edit .env: set ANTHROPIC_API_KEY, or AI_PROVIDER=ollama for local AI
 
 # 3. Start services
 docker compose up
+
+# Already run Ollama on your host? Reuse its models instead of the bundled one:
+# docker compose -f docker-compose.yml -f docker-compose.host-ollama.yml up
 
 # 4. Open the UI
 open http://localhost:8000

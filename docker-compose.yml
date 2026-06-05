@@ -3,9 +3,14 @@
 # Default config binds to 127.0.0.1 only. Change with care.
 #
 # The ollama service runs local AI inference and is reachable ONLY on the
-# internal remi-network — it is NOT published to your host. To use it, set in
-# .env:  AI_PROVIDER=ollama  and  OLLAMA_BASE_URL=http://ollama:11434
+# internal remi-network — it is NOT published to your host. To use it, set
+# AI_PROVIDER=ollama in .env. OLLAMA_BASE_URL is set automatically below — do
+# not set it in .env (inside the container, localhost points at REMI itself).
 # Manage models from REMI's Settings screen. Models persist in ./ollama_data.
+#
+# Already run Ollama on your host (with models downloaded)? Skip the bundled
+# container and connect to it instead — no second copy of your models:
+#   docker compose -f docker-compose.yml -f docker-compose.host-ollama.yml up
 
 services:
   remi-app:
@@ -28,8 +33,9 @@ services:
       - ./data:/app/data
       # Persist audio files across restarts
       - ./audio_storage:/app/audio_storage
-    depends_on:
-      - ollama
+    # No `depends_on: ollama` on purpose. REMI connects to Ollama at request
+    # time, never at boot, so start order does not matter. Leaving it out also
+    # lets the host-ollama override cleanly drop the bundled container.
     restart: unless-stopped
     # Security: drop unnecessary capabilities
     cap_drop:

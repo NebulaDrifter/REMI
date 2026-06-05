@@ -1,0 +1,32 @@
+# REMI — connect to an Ollama already running on your HOST machine
+#
+# Use this when you already run Ollama on your computer (with models pulled)
+# and don't want a second container downloading them again.
+#
+# Run with BOTH files:
+#   docker compose -f docker-compose.yml -f docker-compose.host-ollama.yml up
+#
+# This override:
+#   - Points REMI at your host's Ollama (http://host.docker.internal:11434).
+#   - Adds the host-gateway mapping so that name resolves on Linux too
+#     (Docker Desktop on macOS/Windows provides it automatically).
+#   - Disables the bundled `ollama` container via an inactive profile.
+#
+# Still set in .env:  AI_PROVIDER=ollama  and your OLLAMA_MODEL.
+# Model management from the Settings screen then operates on your HOST Ollama.
+
+services:
+  remi-app:
+    environment:
+      # Override the bundled-container address. Your host's Ollama listens on
+      # 11434; host.docker.internal routes from inside the container to the host.
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    extra_hosts:
+      # Required on Linux; harmless on Docker Desktop (macOS/Windows).
+      - "host.docker.internal:host-gateway"
+
+  ollama:
+    # Park the bundled container in a profile that is never activated, so it
+    # does not start. host.docker.internal points at your host's Ollama instead.
+    profiles:
+      - bundled-ollama-disabled
